@@ -7,7 +7,7 @@
 #include "sensors-actions.h"
 #include "random.h"
 
-namespace BS {
+namespace BioSim {
 
 // Each gene specifies one synaptic connection in a neural net. Each
 // connection has an input (source) which is either a sensor or another neuron.

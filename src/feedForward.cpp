@@ -5,7 +5,7 @@
 #include <cmath>
 #include "simulator.h"
 
-namespace BS {
+namespace BioSim {
 
 /********************************************************************************
 This function does a neural net feed-forward operation, from sensor (input) neurons
@@ -39,7 +39,7 @@ We have three types of neurons:
          actionLevels[] which is returned to the caller by value (thanks RVO).
 ********************************************************************************/
 
-std::array<float, Action::NUM_ACTIONS> Indiv::feedForward(unsigned simStep)
+std::array<float, Action::NUM_ACTIONS> Individual::feedForward(unsigned simStep)
 {
     // This container is used to return values for all the action outputs. This array
     // contains one value per action neuron, which is the sum of all its weighted
@@ -95,4 +95,3 @@ std::array<float, Action::NUM_ACTIONS> Indiv::feedForward(unsigned simStep)
 }
 
 } // end namespace BS
-

@@ -18,12 +18,12 @@
 //    3. Add an else clause to ParamManager::ingestParameter() in params.cpp.
 //    4. Add a line to the user's parameter file (default name biosim4.ini)
 
-namespace BS {
+namespace BioSim {
 
 void ParamManager::setDefaults()
 {
-    privParams.sizeX = 128;
-    privParams.sizeY = 128;
+    privParams.gridSize_X = 128;
+    privParams.gridSize_Y = 128;
     privParams.challenge = 6;
 
     privParams.genomeInitialLengthMin = 24;
@@ -133,10 +133,10 @@ void ParamManager::ingestParameter(std::string name, std::string val)
 
     do {
         if (name == "sizex" && isUint && uVal >= 2 && uVal <= (uint16_t)-1) {
-            privParams.sizeX = uVal; break;
+            privParams.gridSize_X = uVal; break;
         }
         else if (name == "sizey" && isUint && uVal >= 2 && uVal <= (uint16_t)-1) {
-            privParams.sizeY = uVal; break;
+            privParams.gridSize_Y = uVal; break;
         }
         else if (name == "challenge" && isUint && uVal < (uint16_t)-1) {
             privParams.challenge = uVal; break;
@@ -295,7 +295,7 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber)
                 }
                 else if (activeFromGeneration == generationNumber) {
                     // Parameter value became active at exactly this generation number
-                    privParams.parameterChangeGenerationNumber = generationNumber; 
+                    privParams.parameterChangeGenerationNumber = generationNumber;
                 }
                 name = name.substr(0, generationDelimiterPos);
             }

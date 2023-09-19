@@ -1,11 +1,11 @@
 // endOfSimStep.cpp
 
-#include <iostream>
 #include <cmath>
-#include "simulator.h"
-#include "imageWriter.h"
+#include <iostream>
 
-namespace BS {
+#include "simulator.h"
+
+namespace BioSim {
 
 /*
 At the end of each sim step, this function is called in single-thread
@@ -21,74 +21,78 @@ mode to take care of several things:
    p.saveVideo is true).
 */
 
-void endOfSimStep(unsigned simStep, unsigned generation)
-{
-    if (p.challenge == CHALLENGE_RADIOACTIVE_WALLS) {
-        // During the first half of the generation, the west wall is radioactive,
-        // where X == 0. In the last half of the generation, the east wall is
-        // radioactive, where X = the area width - 1. There's an exponential
-        // falloff of the danger, falling off to zero at the arena half line.
-        int16_t radioactiveX = (simStep < p.stepsPerGeneration / 2) ? 0 : p.sizeX - 1;
+void endOfSimulationStep(unsigned simStep, unsigned generation) {
+  if (parameterMngrSingleton.challenge == CHALLENGE_RADIOACTIVE_WALLS) {
+    // During the first half of the generation, the west wall is radioactive,
+    // where X == 0. In the last half of the generation, the east wall is
+    // radioactive, where X = the area width - 1. There's an exponential
+    // falloff of the danger, falling off to zero at the arena half line.
+    int16_t radioactiveX =
+        (simStep < parameterMngrSingleton.stepsPerGeneration / 2)
+            ? 0
+            : parameterMngrSingleton.gridSize_X - 1;
 
-        for (uint16_t index = 1; index <= p.population; ++index) { // index 0 is reserved
-            Indiv &indiv = peeps[index];
-            if (indiv.alive) {
-                int16_t distanceFromRadioactiveWall = std::abs(indiv.loc.x - radioactiveX);
-                if (distanceFromRadioactiveWall < p.sizeX / 2) {
-                    float chanceOfDeath = 1.0 / distanceFromRadioactiveWall;
-                    if (randomUint() / (float)RANDOM_UINT_MAX < chanceOfDeath) {
-                        peeps.queueForDeath(indiv);
-                    }
-                }
-            }
+    for (uint16_t index = 1; index <= parameterMngrSingleton.population;
+         ++index) {  // index 0 is reserved
+      Individual &indiv = peeps[index];
+      if (indiv.alive) {
+        int16_t distanceFromRadioactiveWall =
+            std::abs(indiv.loc.x - radioactiveX);
+        if (distanceFromRadioactiveWall < parameterMngrSingleton.gridSize_X / 2) {
+          float chanceOfDeath = 1.0 / distanceFromRadioactiveWall;
+          if (randomUint() / (float)RANDOM_UINT_MAX < chanceOfDeath) {
+            peeps.queueForDeath(indiv);
+          }
         }
+      }
     }
+  }
 
-    // If the individual is touching any wall, we set its challengeFlag to true.
-    // At the end of the generation, all those with the flag true will reproduce.
-    if (p.challenge == CHALLENGE_TOUCH_ANY_WALL) {
-        for (uint16_t index = 1; index <= p.population; ++index) { // index 0 is reserved
-            Indiv &indiv = peeps[index];
-            if (indiv.loc.x == 0 || indiv.loc.x == p.sizeX - 1
-             || indiv.loc.y == 0 || indiv.loc.y == p.sizeY - 1) {
-                indiv.challengeBits = true;
-            }
+  // If the individual is touching any wall, we set its challengeFlag to true.
+  // At the end of the generation, all those with the flag true will reproduce.
+  if (parameterMngrSingleton.challenge == CHALLENGE_TOUCH_ANY_WALL) {
+    for (uint16_t index = 1; index <= parameterMngrSingleton.population;
+         ++index) {  // index 0 is reserved
+      Individual &indiv = peeps[index];
+      if (indiv.loc.x == 0 || indiv.loc.x == parameterMngrSingleton.gridSize_X - 1 ||
+          indiv.loc.y == 0 || indiv.loc.y == parameterMngrSingleton.gridSize_Y - 1) {
+        indiv.challengeBits = true;
+      }
+    }
+  }
+
+  // If this challenge is enabled, the individual gets a bit set in their
+  // challengeBits member if they are within a specified radius of a barrier
+  // center. They have to visit the barriers in sequential order.
+  if (parameterMngrSingleton.challenge == CHALLENGE_LOCATION_SEQUENCE) {
+    float radius = 9.0;
+    for (uint16_t index = 1; index <= parameterMngrSingleton.population;
+         ++index) {  // index 0 is reserved
+      Individual &indiv = peeps[index];
+      for (unsigned n = 0; n < grid.getBarrierCenters().size(); ++n) {
+        unsigned bit = 1 << n;
+        if ((indiv.challengeBits & bit) == 0) {
+          if ((indiv.loc - grid.getBarrierCenters()[n]).length() <= radius) {
+            indiv.challengeBits |= bit;
+          }
+          break;
         }
+      }
     }
+  }
 
-    // If this challenge is enabled, the individual gets a bit set in their challengeBits
-    // member if they are within a specified radius of a barrier center. They have to
-    // visit the barriers in sequential order.
-    if (p.challenge == CHALLENGE_LOCATION_SEQUENCE) {
-        float radius = 9.0;
-        for (uint16_t index = 1; index <= p.population; ++index) { // index 0 is reserved
-            Indiv &indiv = peeps[index];
-            for (unsigned n = 0; n < grid.getBarrierCenters().size(); ++n) {
-                unsigned bit = 1 << n;
-                if ((indiv.challengeBits & bit) == 0) {
-                    if ((indiv.loc - grid.getBarrierCenters()[n]).length() <= radius) {
-                        indiv.challengeBits |= bit;
-                    }
-                    break;
-                }
-            }
-        }
-    }
+  peeps.drainDeathQueue();
+  peeps.drainMoveQueue();
+  pheromones.fade(0);  // takes layerNum  todo!!!
 
-    peeps.drainDeathQueue();
-    peeps.drainMoveQueue();
-    signals.fade(0); // takes layerNum  todo!!!
-
-    // saveVideoFrameSync() is the synchronous version of saveVideFrame()
-    if (p.saveVideo &&
-                ((generation % p.videoStride) == 0
-                 || generation <= p.videoSaveFirstFrames
-                 || (generation >= p.parameterChangeGenerationNumber
-                     && generation <= p.parameterChangeGenerationNumber + p.videoSaveFirstFrames))) {
-        if (!imageWriter.saveVideoFrameSync(simStep, generation)) {
-            std::cout << "imageWriter busy" << std::endl;
-        }
-    }
+  // saveVideoFrameSync() is the synchronous version of saveVideFrame()
+  if (parameterMngrSingleton.saveVideo &&
+      ((generation % parameterMngrSingleton.videoStride) == 0 ||
+       generation <= parameterMngrSingleton.videoSaveFirstFrames ||
+       (generation >= parameterMngrSingleton.parameterChangeGenerationNumber &&
+        generation <= parameterMngrSingleton.parameterChangeGenerationNumber +
+                          parameterMngrSingleton.videoSaveFirstFrames))) {
+  }
 }
 
-} // end namespace BS
+}  // namespace BioSim

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <climits>
 
-namespace BS {
+namespace BioSim {
 
 
 struct RandomUintGenerator{

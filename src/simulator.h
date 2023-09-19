@@ -11,7 +11,7 @@
 #include "peeps.h"        // the 2D world where the peeps live
 #include "random.h"
 
-namespace BS {
+namespace BioSim {
 
 // Some of the survival challenges to try. Some are interesting, some
 // not so much. Fine-tune the challenges by tweaking the corresponding code
@@ -38,15 +38,15 @@ constexpr unsigned CHALLENGE_ALTRUISM = 17;
 constexpr unsigned CHALLENGE_ALTRUISM_SACRIFICE = 18;
 
 extern ParamManager paramManager; // manages simulator params from the config file plus more
-extern const Params &p; // read-only simulator config params
+extern const Params &parameterMngrSingleton; // read-only simulator config params
 extern Grid grid;  // 2D arena where the individuals live
-extern Signals signals;  // pheromone layers
+extern Signals pheromones;  // pheromone layers
 extern Peeps peeps;   // container of all the individuals
 extern void simulator(int argc, char **argv);
 
 // Feeds in-bounds Coords to a function: given a center location and a radius, this
 // function will call f(Coord) once for each location inside the specified area.
-extern void visitNeighborhood(Coord loc, float radius, std::function<void(Coord)> f);
+extern void visitNeighborhood(Coordinate loc, float radius, std::function<void(Coordinate)> f);
 
 } // end namespace BS
 

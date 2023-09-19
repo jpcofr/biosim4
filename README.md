@@ -1,4 +1,18 @@
-# biosim4
+# biosim4 - remixed
+
+**Why another fork?** I want to try new approaches to structuring the code and hopefully to streamline it.
+
+Fork's goals:
+- Port the code to C++20 and prepare to use C++23 features
+- Enforce code conventions
+- Comment the code in detail
+- Refactor the code as much as possible whenever it makes sense
+- Add unit tests (with google test)
+- Add benchmnark tests (with google benchmnark)
+- Check out for improvements in multithreading
+- Find a better way to handle the config files
+- Find a better way to generate the output (e.g. the logic inside `imageWriter.*`)
+
 
 ## What is this?
 
@@ -16,23 +30,30 @@ I'll try to help if I can.
 Document Contents
 -----------------
 
-* [Code walkthrough](#CodeWalkthrough)
-* [Main data structures](#MainDataStructures)
-* [Config file](#ConfigFile)
-* [Program output](#ProgramOutput)
-* [Main program loop](#MainProgramLoop)
-* [Sensory inputs and action outputs](#SensoryInputsAndActionOutputs)
-* [Basic value types](#BasicValueTypes)
-* [Pheromones](#Pheromones)
-* [Useful utility functions](#UsefulUtilityFunctions)
-* [Installing the code](#InstallingTheCode)
-* [Building the executable](#BuildingTheExecutable)
-* [System requirements](#SystemRequirements)
-* [Compiling](#Compiling)
-* [Bugs](#Bugs)
-* [Execution](#Execution)
-* [Tools directory](#ToolsDirectory)
-* [Build log](#BuildLog)
+- [biosim4 - remixed](#biosim4---remixed)
+  - [What is this?](#what-is-this)
+  - [Document Contents](#document-contents)
+  - [Code walkthrough](#code-walkthrough)
+    - [Main data structures](#main-data-structures)
+    - [Config file](#config-file)
+    - [Program output](#program-output)
+    - [Main program loop](#main-program-loop)
+    - [Sensory inputs and action outputs](#sensory-inputs-and-action-outputs)
+    - [Basic value types](#basic-value-types)
+    - [Pheromones](#pheromones)
+    - [Useful utility functions](#useful-utility-functions)
+  - [Installing the code](#installing-the-code)
+  - [Building the executable](#building-the-executable)
+    - [System requirements](#system-requirements)
+    - [Compiling](#compiling)
+      - [Code::Blocks project file](#codeblocks-project-file)
+      - [Makefile](#makefile)
+      - [Docker](#docker)
+      - [CMake](#cmake)
+  - [Bugs](#bugs)
+  - [Execution](#execution)
+  - [Tools directory](#tools-directory)
+  - [Build log](#build-log)
 
 
 Code walkthrough<a name="CodeWalkthrough"></a>
@@ -247,7 +268,7 @@ When you exit the container, the files compiled in your container files will per
 
 #### CMake
 
-A `CMakeList.txt` file is provided to allow development, build, test, installation and packaging with the CMake tool chain and all IDE's that support CMake. 
+A `CMakeList.txt` file is provided to allow development, build, test, installation and packaging with the CMake tool chain and all IDE's that support CMake.
 
 To build with cmake you need to install cmake. Once installed use the procedure below:
 
@@ -401,5 +422,3 @@ Output file is bin/Release/biosim4 with size 778.42 KB
 Process terminated with status 0 (0 minute(s), 11 second(s))
 0 error(s), 0 warning(s) (0 minute(s), 11 second(s))
 ```
-
-

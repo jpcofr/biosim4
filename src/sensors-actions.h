@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace BS {
+namespace BioSim {
 
 // Neuron Sources (Sensors) and Sinks (Actions)
 

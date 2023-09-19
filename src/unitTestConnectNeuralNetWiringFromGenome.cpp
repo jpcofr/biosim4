@@ -3,11 +3,11 @@
 #include <iostream>
 #include "simulator.h"
 
-namespace BS {
+namespace BioSim {
 
 void unitTestConnectNeuralNetWiringFromGenome()
 {
-    Indiv indiv;
+    Individual indiv;
     Genome genome1 {
 //        { SENSOR, 0, NEURON, 0, 0.0 },
 //        { SENSOR, 1, NEURON, 2, 2.2 },
