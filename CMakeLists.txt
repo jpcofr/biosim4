@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.25)
 project(BioSim4 VERSION 0.2.0)
 
 include(CTest)
@@ -12,7 +12,9 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LDFLAGS}")
 enable_testing()
 
 add_subdirectory(src)
+add_subdirectory(include)
 
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
 install(FILES ./biosim4.ini DESTINATION ./)
 install(DIRECTORY ./tools/ DESTINATION tools)
