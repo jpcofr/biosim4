@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
   bool showConfig = false;
   app.add_flag("--show-config", showConfig, "Print configuration and exit");
 
-  bool exportConfig = false;
+  [[maybe_unused]] bool exportConfig = false;
   std::string exportPath;
   app.add_option("--export-config", exportPath, "Export current config to file and exit");
 

@@ -22,8 +22,12 @@ target_include_directories(biosim4_lib PUBLIC
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/src
   ${OpenCV_INCLUDE_DIRS}
-  ${toml11_SOURCE_DIR}
   ${cli11_SOURCE_DIR}/include
+)
+
+# Suppress warnings coming from toml11 only
+target_include_directories(biosim4_lib SYSTEM PUBLIC
+  ${toml11_SOURCE_DIR}
 )
 
 # Link OpenCV to the library
@@ -68,16 +72,17 @@ endfunction()
 add_biosim_test(test_basic_types unit/test_basic_types.cpp)
 add_biosim_test(test_neural_net_wiring unit/test_neural_net_wiring.cpp)
 add_biosim_test(test_grid_visit_neighborhood unit/test_grid_visit_neighborhood.cpp)
+add_biosim_test(test_render_backend unit/test_render_backend.cpp)
 
 # Optional: Add a target to run all tests
 add_custom_target(run_tests
   COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --verbose
-  DEPENDS test_basic_types test_neural_net_wiring test_grid_visit_neighborhood
+  DEPENDS test_basic_types test_neural_net_wiring test_grid_visit_neighborhood test_render_backend
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   COMMENT "Running all tests..."
 )
 
 message(STATUS "Tests configured with Google Test")
-message(STATUS "  - Unit tests: test_basic_types, test_neural_net_wiring, test_grid_visit_neighborhood")
+message(STATUS "  - Unit tests: test_basic_types, test_neural_net_wiring, test_grid_visit_neighborhood, test_render_backend")
 message(STATUS "  - Run tests with: make test or ninja test")
 message(STATUS "  - Or run individual tests from: ${CMAKE_BINARY_DIR}/bin/")

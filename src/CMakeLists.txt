@@ -20,13 +20,26 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 
 add_executable(biosim4 ${MyCppSources} ${MyCppheaders})
 
-# Include directories: public headers from ../include/ and OpenCV
+# Project includes (non-SYSTEM)
 target_include_directories(biosim4 PRIVATE
   ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/src
   ${OpenCV_INCLUDE_DIRS}
+)
+
+# Third-party headers as SYSTEM to mute their warnings
+target_include_directories(biosim4 SYSTEM PRIVATE
   ${toml11_SOURCE_DIR}
   ${cli11_SOURCE_DIR}/include
 )
+
+# Mute deprecations only on this target (Clang/GCC)
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
+  target_compile_options(biosim4 PRIVATE
+    -Wno-deprecated-literal-operator     # toml11 UDL spacing (C++23)
+    -Wno-deprecated-declarations         # CLI11 wstring_convert path
+  )
+endif()
 
 # Link libraries
 target_link_libraries(biosim4 PUBLIC

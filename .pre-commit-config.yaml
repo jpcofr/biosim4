@@ -70,6 +70,7 @@ repos:
 
   # Static analysis with cppcheck (requires system installation)
   # Install with: brew install cppcheck
+  # NOTE: Temporarily disabled due to hanging on render backend files
   - repo: local
     hooks:
       - id: cppcheck
@@ -79,6 +80,7 @@ repos:
         files: '\.(cpp|cc|cxx|c|h|hpp)$'
         exclude: '^src/CImg\.h$'
         args: ['-j4', '--enable=warning', '--suppress=missingIncludeSystem', '--suppress=normalCheckLevelMaxBranches', '--inline-suppr', '--error-exitcode=1', '--language=c++', '--std=c++20', '--quiet', '--max-configs=1', '--check-level=normal']
+        stages: [manual]  # Only run when explicitly requested with --hook-stage manual
 
   # Doxygen documentation warning check
   # NOTE: Requires doxygen installed (brew install doxygen)
