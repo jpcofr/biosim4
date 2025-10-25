@@ -1,5 +1,5 @@
 # LeakSanitizer Suppressions
-# Use with: LSAN_OPTIONS=suppressions=lsan.supp ./build/src/biosim4
+# Use with: LSAN_OPTIONS=suppressions=lsan.supp ./build/bin/biosim4
 #
 # Common false positives from system libraries and OpenCV
 

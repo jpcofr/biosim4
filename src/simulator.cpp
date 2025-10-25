@@ -111,9 +111,8 @@ void simulator(int argc, char **argv) {
   printSensorsActions();  // show the agents' capabilities
 
   paramManager.setDefaults();
-  // Try config directory first, then fall back to root directory for backwards compatibility
-  const char* configFile = argc > 1 ? argv[1] : 
-    (std::filesystem::exists("config/biosim4.ini") ? "config/biosim4.ini" : "biosim4.ini");
+  // Use config directory for biosim4.ini
+  const char* configFile = argc > 1 ? argv[1] : "config/biosim4.ini";
   paramManager.registerConfigFile(configFile);
   paramManager.updateFromConfigFile(0);
   paramManager.checkParameters();  // check and report any problems

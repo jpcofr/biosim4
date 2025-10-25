@@ -65,13 +65,6 @@ SUMMARY: AddressSanitizer: 1024 byte(s) leaked in 1 allocation(s).
 ./scripts/test-leaks.sh instruments
 ```
 
-### Linux/Docker (Most Comprehensive)
-
-```bash
-# Requires Docker - SLOW but catches everything
-./scripts/test-leaks.sh valgrind
-```
-
 ## Manual Testing
 
 ### Build Once with ASan
@@ -88,26 +81,26 @@ cd ..
 
 ```bash
 # Short test
-./build/src/biosim4 tests/configs/leak-test.ini
+./build/bin/biosim4 tests/configs/leak-test.ini
 
 # Full simulation
-./build/src/biosim4 biosim4.ini
+./build/bin/biosim4 biosim4.ini
 
 # Custom config
-./build/src/biosim4 my-config.ini
+./build/bin/biosim4 my-config.ini
 ```
 
 ### Advanced ASan Options
 
 ```bash
 # More verbose output
-ASAN_OPTIONS=verbosity=1 ./build/src/biosim4 biosim4.ini
+ASAN_OPTIONS=verbosity=1 ./build/bin/biosim4 biosim4.ini
 
 # Check at specific points (not just exit)
-ASAN_OPTIONS=detect_leaks=1:leak_check_at_exit=1 ./build/src/biosim4
+ASAN_OPTIONS=detect_leaks=1:leak_check_at_exit=1 ./build/bin/biosim4
 
 # Suppress known false positives
-LSAN_OPTIONS=suppressions=lsan.supp ./build/src/biosim4
+LSAN_OPTIONS=suppressions=lsan.supp ./build/bin/biosim4
 ```
 
 ## When to Test for Leaks
@@ -131,9 +124,8 @@ LSAN_OPTIONS=suppressions=lsan.supp ./build/src/biosim4
 | ASan | +10-20% | +5 sec | ~2x slower |
 | Leaks | No rebuild | +30 sec | ~10x slower |
 | Instruments | No rebuild | GUI | ~5x slower |
-| Valgrind | Via Docker | +5 min | ~30x slower |
 
-**Recommendation:** Use ASan for regular development, Valgrind for deep investigation.
+**Recommendation:** Use ASan for regular development, Instruments for visual analysis.
 
 ## CI/CD Integration
 
@@ -167,7 +159,7 @@ leak:libopencv_videoio
 
 Then run:
 ```bash
-LSAN_OPTIONS=suppressions=lsan.supp ./build/src/biosim4
+LSAN_OPTIONS=suppressions=lsan.supp ./build/bin/biosim4
 ```
 
 ## Need More Detail?
@@ -188,5 +180,5 @@ See the comprehensive guide:
 rm -rf build && mkdir build && cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON ..
 ninja
-cd .. && ./build/src/biosim4 biosim4.ini
+cd .. && ./build/bin/biosim4 biosim4.ini
 ```

@@ -2,12 +2,6 @@
 obj/
 build/
 
-# Binary output directories (ignore contents but keep structure)
-bin/Debug/*
-!bin/Debug/.gitkeep
-bin/Release/*
-!bin/Release/.gitkeep
-
 # Generated output (images, videos, logs)
 output/
 

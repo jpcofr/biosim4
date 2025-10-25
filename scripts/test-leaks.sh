@@ -7,7 +7,7 @@ set -e
 
 METHOD=${1:-asan}
 BUILD_DIR="build"
-BINARY="$BUILD_DIR/src/biosim4"
+BINARY="$BUILD_DIR/bin/biosim4"
 TEST_CONFIG="tests/configs/leak-test.ini"
 
 echo "🔍 BioSim4 Memory Leak Testing"
@@ -90,50 +90,6 @@ case $METHOD in
         instruments -t Leaks "$BINARY" "$TEST_CONFIG"
         ;;
         
-    valgrind)
-        echo "Method: Valgrind (via Docker)"
-        echo ""
-        echo "⚠️  This is slow but comprehensive"
-        echo ""
-        
-        # Check if Dockerfile has valgrind
-        if ! grep -q "valgrind" Dockerfile; then
-            echo "❌ Dockerfile doesn't include valgrind."
-            echo "Add this to your Dockerfile:"
-            echo ""
-            echo "RUN apt-get update && apt-get install -yqq \\"
-            echo "    valgrind \\"
-            echo "    && apt-get clean"
-            echo ""
-            exit 1
-        fi
-        
-        echo "Building Docker image with valgrind..."
-        docker build -t biosim4-valgrind .
-        
-        echo ""
-        echo "Running valgrind in Docker..."
-        docker run --rm -v "$(pwd)":/app biosim4-valgrind bash -c \
-            "mkdir -p build && cd build && \
-             cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug .. && \
-             ninja && \
-             valgrind --leak-check=full --show-leak-kinds=all \
-             --track-origins=yes --verbose \
-             --log-file=../valgrind-out.txt \
-             ./src/biosim4 ../$TEST_CONFIG"
-        
-        echo ""
-        echo "Valgrind output saved to: valgrind-out.txt"
-        
-        if grep -q "definitely lost: 0 bytes" valgrind-out.txt && \
-           grep -q "indirectly lost: 0 bytes" valgrind-out.txt; then
-            echo "✅ No memory leaks detected!"
-        else
-            echo "❌ Memory leaks found. Check valgrind-out.txt"
-            exit 1
-        fi
-        ;;
-        
     *)
         echo "❌ Unknown method: $METHOD"
         echo ""
@@ -141,7 +97,6 @@ case $METHOD in
         echo "  asan        - AddressSanitizer (fast, recommended)"
         echo "  leaks       - macOS leaks command"
         echo "  instruments - Xcode Instruments GUI"
-        echo "  valgrind    - Valgrind via Docker (slow but thorough)"
         echo ""
         echo "Usage: $0 [method]"
         exit 1

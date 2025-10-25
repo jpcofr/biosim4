@@ -37,8 +37,10 @@ and implementation. All architectural decisions and code review are performed by
 Document Contents
 -----------------
 
-- [biosim4 - remixed](#biosim4---remixed)
-  - [What is this?](#what-is-this)
+- [biosim4 - Enhanced Fork](#biosim4---enhanced-fork)
+  - [About This Fork](#about-this-fork)
+    - [Original Project](#original-project)
+    - [Fork Goals and Enhancements](#fork-goals-and-enhancements)
   - [Document Contents](#document-contents)
   - [Code walkthrough](#code-walkthrough)
     - [Main data structures](#main-data-structures)
@@ -286,12 +288,12 @@ ninja
 
 Configure with `-D<OPTION>=<VALUE>`:
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `USE_FETCHCONTENT_OPENCV` | `OFF` | Build OpenCV from source |
-| `ENABLE_VIDEO_GENERATION` | `ON` | Enable .avi video file generation |
-| `ENABLE_SANITIZERS` | `OFF` | Enable AddressSanitizer & UndefinedBehaviorSanitizer |
-| `ENABLE_THREAD_SANITIZER` | `OFF` | Enable ThreadSanitizer |
+| Option                    | Default | Description                                          |
+|---------------------------|---------|------------------------------------------------------|
+| `USE_FETCHCONTENT_OPENCV` | `OFF`   | Build OpenCV from source                             |
+| `ENABLE_VIDEO_GENERATION` | `ON`    | Enable .avi video file generation                    |
+| `ENABLE_SANITIZERS`       | `OFF`   | Enable AddressSanitizer & UndefinedBehaviorSanitizer |
+| `ENABLE_THREAD_SANITIZER` | `OFF`   | Enable ThreadSanitizer                               |
 
 Examples:
 ```bash
@@ -320,7 +322,7 @@ mkdir build && cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON ..
 ninja
 cd ..
-./build/src/biosim4 tests/configs/leak-test.ini
+./build/bin/biosim4 tests/configs/leak-test.ini
 ```
 
 Use the automated testing script:
@@ -365,7 +367,7 @@ pkg-config --modversion opencv4
 
 ```sh
 cd /path/to/biosim4    # Navigate to project root if not already there
-./build/src/biosim4
+./build/bin/biosim4
 ```
 
 The simulator will automatically look for the configuration file in `config/biosim4.ini` (or `biosim4.ini` in the root directory for backwards compatibility), and will write output files to `output/images/` and `output/logs/` directories relative to the current directory.
@@ -373,16 +375,16 @@ The simulator will automatically look for the configuration file in `config/bios
 Optionally, specify a different config file:
 
 ```sh
-./build/src/biosim4 path/to/config.ini
+./build/bin/biosim4 path/to/config.ini
 ```
 
 **Common mistake**: Don't run from inside the `build/` directory:
 ```sh
 # ❌ WRONG - will fail to find config file
-cd build/src && ./biosim4
+cd build/bin && ./biosim4
 
 # ✅ CORRECT - run from project root
-./build/src/biosim4
+./build/bin/biosim4
 ```
 
 ### Configuration

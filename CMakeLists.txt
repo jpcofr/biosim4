@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14.0)
 project(BioSim4 VERSION 0.2.0)
 
+# Ensure all build outputs go into ./build/
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
 # Build options
 option(USE_FETCHCONTENT_OPENCV "Build OpenCV from source (slow first time, ~30-60min)" OFF)
 option(ENABLE_VIDEO_GENERATION "Enable video file generation" ON)

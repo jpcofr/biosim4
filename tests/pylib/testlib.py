@@ -186,7 +186,7 @@ def runTest():
     global TEMPinifile
 
     relpath = "./tests/configs/%s" % TEMPinifile
-    shellcmd = "./bin/Release/biosim4 %s" % relpath
+    shellcmd = "./build/bin/biosim4 %s" % relpath
     print("Running the simulation...\n")
     # launch biosim4
     process = subprocess.run(shellcmd, cwd='../', shell=True, capture_output=False, text=True, check=True)
