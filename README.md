@@ -1,7 +1,18 @@
-# biosim4 - remix!
+# biosim4 - remixed
 
-> **This is an enhanced fork** - Original by [David R. Miller](https://github.com/davidrmiller/biosim4) | Fork by Juan Pablo Contreras Franco  
-> See [NOTICE](NOTICE) file for full attribution and modifications. Developed with AI assistance.
+**Why another fork?** I want to try new approaches to structuring the code and hopefully to streamline it.
+
+Fork's goals:
+- Port the code to C++20 and prepare to use C++23 features
+- Enforce code conventions
+- Comment the code in detail
+- Refactor the code as much as possible whenever it makes sense
+- Add unit tests (with google test)
+- Add benchmnark tests (with google benchmnark)
+- Check out for improvements in multithreading
+- Find a better way to handle the config files
+- Find a better way to generate the output (e.g. the logic inside `imageWriter.*`)
+
 
 ## What is this?
 
@@ -12,15 +23,14 @@ The results of the experiments are summarized in this YouTube video:
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;https://www.youtube.com/watch?v=N3tRFayqVtk
 
-This command line program lacks a friendly interface, so compiling and executing the program may
+This code lacks a friendly interface, so compiling and executing the program may
 require attention to details. If you ask questions in the Issues,
-I'll try to help if I can. For a nicer user interface, check out the
-[fork of this project](https://github.com/ilyabrilev/biosim4) hosted by @ilyabrilev.
+I'll try to help if I can.
 
 Document Contents
 -----------------
 
-- [biosim4 - remix!](#biosim4---remix)
+- [biosim4 - remixed](#biosim4---remixed)
   - [What is this?](#what-is-this)
   - [Document Contents](#document-contents)
   - [Code walkthrough](#code-walkthrough)
@@ -36,14 +46,17 @@ Document Contents
   - [Building the executable](#building-the-executable)
     - [System requirements](#system-requirements)
     - [Compiling](#compiling)
-      - [Code::Blocks project file](#codeblocks-project-file)
-      - [Makefile](#makefile)
-      - [Docker](#docker)
-      - [CMake](#cmake)
-  - [Bugs](#bugs)
+      - [Quick Start with Homebrew (Recommended)](#quick-start-with-homebrew-recommended)
+      - [Self-Contained Build with FetchContent](#self-contained-build-with-fetchcontent)
+      - [Build Options](#build-options)
+      - [Memory Leak Testing](#memory-leak-testing)
+      - [Troubleshooting](#troubleshooting)
   - [Execution](#execution)
+    - [Running the Simulator](#running-the-simulator)
+      - [With CMake Build (Recommended)](#with-cmake-build-recommended)
+    - [Configuration](#configuration)
+    - [Stopping the Simulator](#stopping-the-simulator)
   - [Tools directory](#tools-directory)
-  - [Build log](#build-log)
 
 
 Code walkthrough<a name="CodeWalkthrough"></a>
@@ -53,7 +66,7 @@ Code walkthrough<a name="CodeWalkthrough"></a>
 ### Main data structures
 
 The code in the src directory compiles to a single console program named biosim4. When it is
-invoked, it will read parameters from a config file named biosim4.ini by default. A different
+invoked, it will read parameters from a config file named config/biosim4.ini by default (or biosim4.ini in the root directory for backwards compatibility). A different
 config file can be specified on the command line.
 
 The simulator will then configure a 2D arena where the creatures live. Class Grid (see grid.h and grid.cpp)
@@ -80,14 +93,14 @@ All the simulator code lives in the BS namespace (short for "biosim".)
 <a name="ConfigFile"></a>
 ### Config file
 
-The config file, named biosim4.ini by default, contains all the tunable parameters for a
+The config file, named config/biosim4.ini by default, contains all the tunable parameters for a
 simulation run. The biosim4 executable reads the config file at startup, then monitors it for
 changes during the simulation. Although it's not foolproof, many parameters can be modified during
 the simulation run. Class ParamManager (see params.h and params.cpp) manages the configuration
 parameters and makes them available to the simulator through a read-only pointer provided by
 ParamManager::getParamRef().
 
-See the provided biosim4.ini for documentation for each parameter. Most of the parameters
+See the provided config/biosim4.ini for documentation for each parameter. Most of the parameters
 in the config file correspond to members in struct Params (see params.h). A few additional
 parameters may be stored in struct Params. See the documentation in params.h for how to
 support new parameters.
@@ -98,7 +111,7 @@ support new parameters.
 
 Depending on the parameters in the config file, the following data can be produced:
 
-* The simulator will append one line to logs/epoch.txt after the completion of
+* The simulator will append one line to output/logs/epoch.txt after the completion of
 each generation. Each line records the generation number, number of individuals
 who survived the selection criterion, an estimate of the population's genetic
 diversity, average genome length, and number of deaths due to the "kill" gene.
@@ -109,7 +122,7 @@ intervals to stdout. Parameters in the config file specify the number and interv
 The genomes are displayed in hex format and also in a mnemonic format that can
 be fed to tools/graph-nnet.py to produce a graphic network diagram.
 
-* Movies of selected generations will be created in the images/ directory. Parameters
+* Movies of selected generations will be created in the output/images/ directory. Parameters
 in the config file specify the interval at which to make movies. Each movie records
 a single generation.
 
@@ -209,154 +222,191 @@ Copy the directory structure to a location of your choice.
 <a name="SystemRequirements"></a>
 ### System requirements
 
-This code is known to run in the following environment:
-
-* Ubuntu 21.04, 22.04, or Debian 10 (Buster)
-* cimg-dev 2.4.5 or later
-* libopencv-dev 3.2 or later
-* gcc 8.3, 9.3 or 10.3
-* python-igraph 0.8.3 (used only by tools/graph-nnet.py)
-* gnuplot 5.2.8 (used only by tools/graphlog.gp)
-
-The code also runs in distributions based on Ubuntu 20.04, but only if the default version of
-cimg-dev is replaced with version 2.8.4 or later.
+- macOS (Apple Silicon or Intel)
+- CMake 3.14+
+- Ninja build system
+- LLVM/Clang (from Homebrew)
+- OpenMP support
+- OpenCV 4.7+ with videoio module
+- python-igraph 0.8.3 (used only by tools/graph-nnet.py)
+- gnuplot 5.2.8 (used only by tools/graphlog.gp)
 
 <a name="Compiling"></a>
 ### Compiling
 
-You have several options:
+#### Quick Start with Homebrew (Recommended)
 
-#### Code::Blocks project file
+**Fast setup: ~5 minutes**
 
-The file named "biosim4.cbp" is a configuration file for the Code::Blocks IDE version 20.03.
-
-#### Makefile
-
-A Makefile is provided which was created from biosim4.cbp with cbp2make. Possible make commands include:
-
-* "make" with no arguments makes release and debug versions in ./bin/Release and ./bin/Debug
-* "make release" makes a release version in ./bin/Release
-* "make debug" makes a debug version in ./bin/Debug
-* "make clean" removes the intermediate build files
-
-#### Docker
-
-A Dockerfile is provided which leverages the aforementioned Makefile.
-
-To build a Docker environment in which you can compile the program:
-
-```sh
-docker build -t biosim4 .
+1. Install dependencies:
+```bash
+brew install cmake ninja llvm libomp opencv
 ```
 
-You can then compile the program with an ephemeral container. Note that `pwd` stands for the fullpath of your `biosim4` project, something like `C:/full-path-in-windows/to-your/biosim4-folder/biosim4` in Windows, or `/home/user/project-path/biosim4/` in Linux/MacOS:
-
-```sh
-docker run --rm -ti -v `pwd`:/app --name biosim biosim4 make
-```
-When you exit the container, the files compiled in your container files will persist in `./bin`.
-
-#### CMake
-
-A `CMakeList.txt` file is provided to allow development, build, test, installation and packaging with the CMake tool chain and all IDEs that support CMake. 
-
-To build with cmake you need to install cmake. 
-
-If you're using docker, `cmake` is already installed in the image. You can directly open its terminal to use it:
-```sh
-docker run --rm -ti -v `pwd`:/app --name biosim biosim4 bash
+2. Build with Ninja:
+```bash
+rm -rf build/
+mkdir build && cd build
+cmake -G Ninja ..
+ninja
 ```
 
-Once cmake is installed, use the procedure below:
-```sh
-mkdir build
-cd build
-cmake ../
-cmake --build ./
+3. Run:
+```bash
+./src/biosim4
 ```
 
-To make a test installation and run the program:
+#### Self-Contained Build with FetchContent
 
-```sh
-mkdir build
-cd build
-cmake ../
-cmake --build ./
-mkdir test_install
-cmake --install ./ --prefix ./test_install
-cd test_install
-./bin/biosim4
+Use this for a fully self-contained build without Homebrew dependencies (~30-60 minutes first time):
+
+1. Minimal dependencies:
+```bash
+brew install cmake ninja llvm libomp
 ```
 
-To make a release package:
-
-```sh
-mkdir build
-cd build
-cmake ../
-cmake --build ./
-cpack ./
+2. Build with FetchContent (downloads & compiles OpenCV):
+```bash
+rm -rf build/
+mkdir build && cd build
+cmake -G Ninja -DUSE_FETCHCONTENT_OPENCV=ON ..
+ninja
 ```
 
-<a name="Bugs"></a>
-## Bugs
---------------------
+**Note:** Subsequent builds are fast - OpenCV is cached in `build/_deps/`
 
-If you try to compile the simulator under a distribution based on Ubuntu 20.04, you will encounter this
-bug in the version of CImg.h (package cimg-dev) provided by the package maintainer:
+#### Build Options
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=951965
+Configure with `-D<OPTION>=<VALUE>`:
 
-In biosim4, CImg.h is used only as a convenient interface to OpenCV
-to generate movies of the simulated creatures in their 2D world. You have several
-choices if you want to proceed with Ubuntu 20.04:
+| Option | Default | Description |
+|--------|---------|-------------|
+| `USE_FETCHCONTENT_OPENCV` | `OFF` | Build OpenCV from source |
+| `ENABLE_VIDEO_GENERATION` | `ON` | Enable .avi video file generation |
+| `ENABLE_SANITIZERS` | `OFF` | Enable AddressSanitizer & UndefinedBehaviorSanitizer |
+| `ENABLE_THREAD_SANITIZER` | `OFF` | Enable ThreadSanitizer |
 
-* You can strip out the code that generates the movies and just run the simulator without the movies. Most of
-that graphics code is in imageWriter.cpp and imageWriter.h.
+Examples:
+```bash
+# Default: use Homebrew OpenCV with videos enabled
+cmake -G Ninja ..
 
-* You can upgrade your CImg.h to version 2.8.4 or later by installing the [Ubuntu 22.04 cimg-dev package](https://packages.ubuntu.com/jammy/cimg-dev), For example:
+# Build OpenCV from source
+cmake -G Ninja -DUSE_FETCHCONTENT_OPENCV=ON ..
+
+# Build with memory leak detection
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON ..
+
+# Build with race condition detection
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_THREAD_SANITIZER=ON ..
+
+# Disable video generation
+cmake -G Ninja -DENABLE_VIDEO_GENERATION=OFF ..
 ```
-cd /tmp && \
-wget http://mirrors.kernel.org/ubuntu/pool/universe/c/cimg/cimg-dev_2.9.4+dfsg-3_all.deb -O cimg-dev_2.9.4+dfsg-3_all.deb && \
-sudo apt install ./cimg-dev_2.9.4+dfsg-3_all.deb && \
-rm cimg-dev_2.9.4+dfsg-3_all.deb;
+
+#### Memory Leak Testing
+
+Build with AddressSanitizer:
+```bash
+rm -rf build/
+mkdir build && cd build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON ..
+ninja
+cd ..
+./build/src/biosim4 tests/configs/leak-test.ini
 ```
 
-* You could convert the CImg.h function calls to use OpenCV directly. Sorry I don't have a guide for how
-to do that.
+Use the automated testing script:
+```bash
+./scripts/test-leaks.sh
+```
+
+#### Troubleshooting
+
+**"OpenCV not found"**
+```bash
+# Check if OpenCV is installed
+brew list opencv
+
+# If not installed
+brew install opencv
+```
+
+**Clean Rebuild**
+```bash
+rm -rf build/
+mkdir build && cd build
+cmake -G Ninja ..
+ninja
+```
+
+**Verify Video Support**
+```bash
+pkg-config --modversion opencv4
+./src/biosim4  # Check for .avi files in output/images/
+```
 
 <a name="Execution"></a>
 ## Execution
 --------------------
 
-Test everything is working by executing the Debug or Release executable in the bin directory with the default config file ("biosim4.ini"). e.g.:
-```
-./bin/Release/biosim4 biosim4.ini
-```
+### Running the Simulator
 
-You should have output something like:
-`Gen 1, 2290 survivors`
+#### With CMake Build (Recommended)
 
-If this works then edit the config file ("biosim4.ini") for the parameters you want for the simulation run and execute the Debug or Release executable. Optionally specify the name of the config file as the first command line argument, e.g.:
+**Important**: Always run the simulator from the project root directory:
 
-```
-./bin/Release/biosim4 [biosim4.ini]
-```
-
-Note: If using docker,
 ```sh
-docker run --rm -ti -v `pwd`:/app --name biosim biosim4 bash
+cd /path/to/biosim4    # Navigate to project root if not already there
+./build/src/biosim4
 ```
-will put you into
-an environment where you can run the above and have all your files persist when you exit (using `Ctrl-D`).
+
+The simulator will automatically look for the configuration file in `config/biosim4.ini` (or `biosim4.ini` in the root directory for backwards compatibility), and will write output files to `output/images/` and `output/logs/` directories relative to the current directory.
+
+Optionally, specify a different config file:
+
+```sh
+./build/src/biosim4 path/to/config.ini
+```
+
+**Common mistake**: Don't run from inside the `build/` directory:
+```sh
+# ❌ WRONG - will fail to find config file
+cd build/src && ./biosim4
+
+# ✅ CORRECT - run from project root
+./build/src/biosim4
+```
+
+### Configuration
+
+The simulator reads parameters from `config/biosim4.ini` by default (or `biosim4.ini` in the root directory for backwards compatibility). You can also specify a different config file: Key parameters include:
+
+- **maxGenerations**: Number of generations to simulate (default: 200000)
+  - Set to a lower value (e.g., 100-500) for quick tests
+- **saveVideo**: Enable/disable video generation (default: true)
+- **videoStride**: Generate a video every N generations (default: 25)
+- **videoSaveFirstFrames**: Always save videos for first N generations (default: 2)
+- **imageDir**: Directory where videos are saved (default: output/images)
+- **population**: Number of individuals per generation (default: 3000)
+- **stepsPerGeneration**: Simulation steps per generation (default: 300)
+
+Generated videos will be saved as `gen-NNNNNN.avi` in the `output/images/` directory.
+
+### Stopping the Simulator
+
+The simulator runs until it reaches `maxGenerations` or you manually stop it:
+
+- Press `Ctrl+C` in the terminal to stop the simulation
+- Or use `kill <pid>` if running in background
 
 
 <a name="ToolsDirectory"></a>
 ## Tools directory
 --------------------
 
-tools/graphlog.gp takes the generated log file logs/epoch-log.txt
-and generates a graphic plot of the simulation run in images/log.png. You may need to adjust
+tools/graphlog.gp takes the generated log file output/logs/epoch-log.txt
+and generates a graphic plot of the simulation run in output/images/log.png. You may need to adjust
 the directory paths in graphlog.gp for your environment. graphlog.gp can be invoked manually,
 or if the option "updateGraphLog" is set to true
 in the simulation config file, the simulator will try to invoke tools/graphlog.gp automatically
@@ -370,58 +420,3 @@ src/simulator.cpp. The genome output is printed to stdout automatically
 if the parameter named "displaySampleGenomes" is set to nonzero in the config file.
 An individual genome can be copied from that output stream and renamed "net.txt" in order to run
 graph-nnet.py.
-
-
-Note: If using the `docker run ... bash` command, the presumed directory structure would necessitate the
-following syntax:
-
-```sh
-gnuplot tools/graphlog.gp
-cd tools && python3 graph-nnet.py
-```
-
-<a name="BuildLog"></a>
-## Build log
---------------------
-
-In case it helps for debugging the build process, here is a build log from Code::Blocks running under Ubuntu 21.04:
-
-
-```
--------------- Clean: Release in biosim4 (compiler: GNU GCC Compiler)---------------
-
-Cleaned "biosim4 - Release"
-
--------------- Build: Release in biosim4 (compiler: GNU GCC Compiler)---------------
-
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/analysis.cpp -o obj/Release/src/analysis.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/basicTypes.cpp -o obj/Release/src/basicTypes.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/createBarrier.cpp -o obj/Release/src/createBarrier.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/endOfGeneration.cpp -o obj/Release/src/endOfGeneration.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/endOfSimStep.cpp -o obj/Release/src/endOfSimStep.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/executeActions.cpp -o obj/Release/src/executeActions.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/feedForward.cpp -o obj/Release/src/feedForward.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/genome-compare.cpp -o obj/Release/src/genome-compare.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/genome.cpp -o obj/Release/src/genome.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/getSensor.cpp -o obj/Release/src/getSensor.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/grid.cpp -o obj/Release/src/grid.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/imageWriter.cpp -o obj/Release/src/imageWriter.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/indiv.cpp -o obj/Release/src/indiv.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/main.cpp -o obj/Release/src/main.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/params.cpp -o obj/Release/src/params.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/peeps.cpp -o obj/Release/src/peeps.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/random.cpp -o obj/Release/src/random.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/signals.cpp -o obj/Release/src/signals.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/simulator.cpp -o obj/Release/src/simulator.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/spawnNewGeneration.cpp -o obj/Release/src/spawnNewGeneration.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/survival-criteria.cpp -o obj/Release/src/survival-criteria.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/unitTestBasicTypes.cpp -o obj/Release/src/unitTestBasicTypes.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/unitTestConnectNeuralNetWiringFromGenome.cpp -o obj/Release/src/unitTestConnectNeuralNetWiringFromGenome.o
-g++ -Wall -fexceptions -fopenmp -O3 -I/usr/include/opencv4 -c /home/dm/sw/biosim4-git/src/unitTestGridVisitNeighborhood.cpp -o obj/Release/src/unitTestGridVisitNeighborhood.o
-g++  -o bin/Release/biosim4 obj/Release/src/analysis.o obj/Release/src/basicTypes.o obj/Release/src/createBarrier.o obj/Release/src/endOfGeneration.o obj/Release/src/endOfSimStep.o obj/Release/src/executeActions.o obj/Release/src/feedForward.o obj/Release/src/genome-compare.o obj/Release/src/genome.o obj/Release/src/getSensor.o obj/Release/src/grid.o obj/Release/src/imageWriter.o obj/Release/src/indiv.o obj/Release/src/main.o obj/Release/src/params.o obj/Release/src/peeps.o obj/Release/src/random.o obj/Release/src/signals.o obj/Release/src/simulator.o obj/Release/src/spawnNewGeneration.o obj/Release/src/survival-criteria.o obj/Release/src/unitTestBasicTypes.o obj/Release/src/unitTestConnectNeuralNetWiringFromGenome.o obj/Release/src/unitTestGridVisitNeighborhood.o  -lX11 -lgomp -pthread -O3 -s  /usr/lib/x86_64-linux-gnu/libopencv_core.so /usr/lib/x86_64-linux-gnu/libopencv_video.so /usr/lib/x86_64-linux-gnu/libopencv_videoio.so
-Output file is bin/Release/biosim4 with size 778.42 KB
-Process terminated with status 0 (0 minute(s), 11 second(s))
-0 error(s), 0 warning(s) (0 minute(s), 11 second(s))
-```
-
-
