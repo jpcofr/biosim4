@@ -38,9 +38,9 @@ python3 testapp.py --test microtest --params
 
 ### How biosim4 sources parameters
 
-If no config file is specified, biosim4 uses the default parameters listed in biosim4.ini. Additionally, in the absence of the biosim4.ini config file, biosim4 will revert to hardcoded parameters that correspond to the values defined in biosim4.ini. 
+If no config file is specified, biosim4 uses the default parameters listed in config/biosim4.ini. Additionally, in the absence of the config file, biosim4 will revert to hardcoded parameters that correspond to the values defined in config/biosim4.ini. 
 
-When using testapp.py you can specify only the few parameters that differ from the default parameters defined in biosim4.ini. See the sample _microtest_ in ./configs/testapp.ini for an example.
+When using testapp.py you can specify only the few parameters that differ from the default parameters defined in config/biosim4.ini. See the sample _microtest_ in ./configs/testapp.ini for an example.
 
 However, the caveat of this approach is that, __should one or more default parameter values change in future__, your __test results may deviate from expectation__. Unless defined explicitly in your test configuration, _biosim4 will substitute default parameter values for any test parameter that is missing_.
 
