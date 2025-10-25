@@ -16,10 +16,8 @@ tools/*.svg
 
 # IDE and editor files
 .vscode/
-.DS_Store
 
 # Documentation (local only, NOT test docs)
 # Note: tests/docs/ is tracked for test-related documentation
 .github/
-!.github/copilot-instructions.md
 doc/

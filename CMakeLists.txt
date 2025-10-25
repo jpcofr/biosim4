@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.14.0)
 project(BioSim4 VERSION 0.2.0)
 
 # Build options
@@ -40,9 +40,7 @@ endif()
 enable_testing()
 
 add_subdirectory(src)
-add_subdirectory(include)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
 
 install(FILES ./config/biosim4.ini DESTINATION config)
 install(DIRECTORY ./tools/ DESTINATION tools)

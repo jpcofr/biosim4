@@ -1,31 +1,38 @@
-# biosim4 - remixed
+# biosim4 - Enhanced Fork
 
-**Why another fork?** I want to try new approaches to structuring the code and hopefully to streamline it.
+> **Forked from [davidrmiller/biosim4](https://github.com/davidrmiller/biosim4)**  
+> Original author: David R. Miller | Fork enhancements: Juan Pablo Contreras Franco  
+> Developed with AI pair programming assistance
 
-Fork's goals:
-- Port the code to C++20 and prepare to use C++23 features
-- Enforce code conventions
-- Comment the code in detail
-- Refactor the code as much as possible whenever it makes sense
-- Add unit tests (with google test)
-- Add benchmnark tests (with google benchmnark)
-- Check out for improvements in multithreading
-- Find a better way to handle the config files
-- Find a better way to generate the output (e.g. the logic inside `imageWriter.*`)
+## About This Fork
 
+This is an enhanced and modernized fork of the original biosim4 biological evolution simulator.
+The original project simulates creatures with neural networks evolving through natural selection
+in a 2D grid world.
 
-## What is this?
+### Original Project
+- **Author**: David R. Miller
+- **Repository**: https://github.com/davidrmiller/biosim4
+- **Video**: ["I programmed some creatures. They evolved."](https://www.youtube.com/watch?v=N3tRFayqVtk)
+- **License**: MIT License
 
-This pile of code was used to simulate biological creatures that evolve through natural selection.
-The results of the experiments are summarized in this YouTube video:
+### Fork Goals and Enhancements
+- ✅ Port code to C++20/23 standards
+- ✅ Enforce consistent code conventions
+- ✅ Comprehensive code documentation
+- ✅ Refactor for improved maintainability
+- ✅ Add unit tests (Google Test framework)
+- 🔄 Add benchmark tests (Google Benchmark)
+- 🔄 Multithreading optimizations
+- ✅ Improved configuration handling
+- ✅ Enhanced output generation (`imageWriter` refactoring)
+- ✅ Memory leak detection and fixes
+- ✅ Build system modernization (CMake + Ninja)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"I programmed some creatures. They evolved."
+**Development**: This fork uses AI-assisted pair programming for code analysis, refactoring,
+and implementation. All architectural decisions and code review are performed by the human developer.
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;https://www.youtube.com/watch?v=N3tRFayqVtk
-
-This code lacks a friendly interface, so compiling and executing the program may
-require attention to details. If you ask questions in the Issues,
-I'll try to help if I can.
+---
 
 Document Contents
 -----------------

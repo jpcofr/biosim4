@@ -1,6 +1,11 @@
 
 FILE(GLOB MyCppSources ./*.cpp)
-FILE(GLOB MyCppheaders ../include/*.h)
+FILE(GLOB MyCppheaders ./*.h)
+
+# TODO move the unit test to test build and include in test mechanims of cmake
+#list(REMOVE_ITEM MyCppSources "./unitTestBasicTypes.cpp")
+#list(REMOVE_ITEM MyCppSources "./unitTestConnectNeuralNetWiringFromGenome.cpp")
+#list(REMOVE_ITEM MyCppSources "./unitTestGridVisitNeighborhood.cpp")
 
 # ============================================================================
 # OpenCV Configuration - Choose your approach
@@ -80,7 +85,6 @@ add_executable(biosim4 ${MyCppSources} ${MyCppheaders})
 
 # Include OpenCV headers
 target_include_directories(biosim4 PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_include_directories(biosim4 PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # Link libraries
 target_link_libraries(biosim4 PUBLIC ${OpenCV_LIBS})

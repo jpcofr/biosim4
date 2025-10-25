@@ -55,7 +55,7 @@ void ParamManager::setDefaults()
     privParams.videoStride = 25;
     privParams.videoSaveFirstFrames = 2;
     privParams.displayScale = 8;
-    privParams.agentSize = 2;
+    privParams.agentSize = 4;
     privParams.genomeAnalysisStride = privParams.videoStride;
     privParams.displaySampleGenomes = 5;
     privParams.genomeComparisonMethod = 1;
