@@ -1,0 +1,25 @@
+# LeakSanitizer Suppressions
+# Use with: LSAN_OPTIONS=suppressions=lsan.supp ./build/src/biosim4
+#
+# Common false positives from system libraries and OpenCV
+
+# OpenCV internal allocations (cached, not actual leaks)
+leak:libopencv_core
+leak:libopencv_video
+leak:libopencv_videoio
+leak:libopencv_imgcodecs
+leak:libopencv_imgproc
+
+# macOS system libraries (cached resources)
+leak:libsystem_c.dylib
+leak:libsystem_malloc.dylib
+leak:CoreFoundation
+
+# Threading library initialization (one-time allocations)
+leak:libomp
+leak:libgomp
+leak:pthread_create
+
+# C++ runtime initialization
+leak:libstdc++
+leak:libc++
