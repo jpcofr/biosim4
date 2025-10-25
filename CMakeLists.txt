@@ -1,5 +1,12 @@
-cmake_minimum_required(VERSION 3.14.0)
+cmake_minimum_required(VERSION 4.1.2)
 project(BioSim4 VERSION 0.2.0)
+
+# Set default parallel build level if not already set
+if(NOT CMAKE_BUILD_PARALLEL_LEVEL)
+    include(ProcessorCount)
+    ProcessorCount(N)
+    set(CMAKE_BUILD_PARALLEL_LEVEL ${N})
+endif()
 
 # Ensure all build outputs go into ./build/
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
