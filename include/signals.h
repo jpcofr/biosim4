@@ -176,4 +176,4 @@ struct Signals {
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_SIGNALS_H_
+#endif  ///< BIOSIM4_INCLUDE_SIGNALS_H_

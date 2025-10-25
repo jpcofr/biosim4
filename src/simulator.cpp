@@ -1,5 +1,5 @@
-// simulator.cpp - Main thread (invoked from main.cpp)
-// This file contains simulator(), the top-level entry point of the simulator.
+/// simulator.cpp - Main thread (invoked from main.cpp)
+/// This file contains simulator(), the top-level entry point of the simulator.
 
 #include "simulator.h"
 
@@ -106,14 +106,14 @@ The threads are:
 threaded due to unresolved bugs when threaded)
 ********************************************************************************/
 void simulator(int argc, char** argv) {
-  printSensorsActions();  // show the agents' capabilities
+  printSensorsActions();  ///< show the agents' capabilities
 
   paramManager.setDefaults();
-  // Use config directory for biosim4.ini
+  /// Use config directory for biosim4.ini
   const char* configFile = argc > 1 ? argv[1] : "config/biosim4.ini";
   paramManager.registerConfigFile(configFile);
   paramManager.updateFromConfigFile(0);
-  paramManager.checkParameters();  // check and report any problems
+  paramManager.checkParameters();  ///< check and report any problems
 
   randomUint.initialize();
 
@@ -122,33 +122,33 @@ void simulator(int argc, char** argv) {
                         parameterMngrSingleton.gridSize_Y);
   imageWriter.init(parameterMngrSingleton.signalLayers, parameterMngrSingleton.gridSize_X,
                    parameterMngrSingleton.gridSize_Y);
-  peeps.initialize(parameterMngrSingleton.population);  // the peeps themselves
+  peeps.initialize(parameterMngrSingleton.population);  ///< the peeps themselves
 
   unsigned currentGeneration = 0;
-  initializeGeneration0();  // starting population
+  initializeGeneration0();  ///< starting population
   runMode = RunMode::RUN;
   unsigned murderCount;
 
-// Ensure shared data remains unmodified within parallel regions. Perform
-// modifications in single-threaded sections.
+/// Ensure shared data remains unmodified within parallel regions. Perform
+/// modifications in single-threaded sections.
 #pragma omp parallel num_threads(parameterMngrSingleton.numThreads) default(shared)
   {
-    randomUint.initialize();  // seed the RNG, each thread has a private instance
+    randomUint.initialize();  ///< seed the RNG, each thread has a private instance
 
-    // Outer loop: process generations
+    /// Outer loop: process generations
     while (runMode == RunMode::RUN && currentGeneration < parameterMngrSingleton.maxGenerations) {
 #pragma omp single
       murderCount = 0;
 
       for (unsigned simulationStep = 0; simulationStep < parameterMngrSingleton.stepsPerGeneration; ++simulationStep) {
-// multithreaded loop: index 0 is reserved, start at 1
+/// multithreaded loop: index 0 is reserved, start at 1
 #pragma omp for schedule(auto)
         for (unsigned individual = 1; individual <= parameterMngrSingleton.population; ++individual)
           if (peeps[individual].alive)
             simulationStepOneIndividual(peeps[individual], simulationStep);
 
-// In single-thread mode: this executes deferred, queued deaths and movements,
-// updates signal layers (pheromone), etc.
+/// In single-thread mode: this executes deferred, queued deaths and movements,
+/// updates signal layers (pheromone), etc.
 #pragma omp single
         {
           murderCount += peeps.deathQueueSize();
@@ -172,7 +172,7 @@ void simulator(int argc, char** argv) {
     }
   }
 
-  displaySampleGenomes(3);  // final report, for debugging
+  displaySampleGenomes(3);  ///< final report, for debugging
 
   std::cout << "Simulator exit." << std::endl;
 }

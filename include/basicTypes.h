@@ -257,4 +257,4 @@ struct __attribute__((packed)) Polar {
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_BASICTYPES_H_
+#endif  ///< BIOSIM4_INCLUDE_BASICTYPES_H_

@@ -152,4 +152,4 @@ extern void printSensorsActions();
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_SENSORS_ACTIONS_H_
+#endif  ///< BIOSIM4_INCLUDE_SENSORS_ACTIONS_H_

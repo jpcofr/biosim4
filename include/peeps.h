@@ -147,4 +147,4 @@ class Peeps {
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_PEEPS_H_
+#endif  ///< BIOSIM4_INCLUDE_PEEPS_H_

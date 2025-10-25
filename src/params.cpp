@@ -1,5 +1,5 @@
-// params.cpp
-// See params.h for notes.
+/// params.cpp
+/// See params.h for notes.
 
 #include "params.h"
 
@@ -12,14 +12,18 @@
 #include <sstream>
 #include <string>
 
-// To add a new parameter:
-//    1. Add a member to struct Params in params.h.
-//    2. Add a member and its default value to privParams in ParamManager::setDefaults()
-//          in params.cpp.
-//    3. Add an else clause to ParamManager::ingestParameter() in params.cpp.
-//    4. Add a line to the user's parameter file (default name config/biosim4.ini)
+/// To add a new parameter:
+///    1. Add a member to struct Params in params.h.
+///    2. Add a member and its default value to privParams in ParamManager::setDefaults()
+///          in params.cpp.
+///    3. Add an else clause to ParamManager::ingestParameter() in params.cpp.
+///    4. Add a line to the user's parameter file (default name config/biosim4.ini)
 
 namespace BioSim {
+
+ParamManager::ParamManager() {
+  setDefaults();
+}
 
 void ParamManager::setDefaults() {
   privParams.gridSize_X = 128;
@@ -76,19 +80,19 @@ bool checkIfUint(const std::string& s) {
 }
 
 bool checkIfInt(const std::string& s) {
-  // return s.find_first_not_of("-0123456789") == std::string::npos;
+  /// return s.find_first_not_of("-0123456789") == std::string::npos;
   std::istringstream iss(s);
   int i;
-  iss >> std::noskipws >> i;  // noskipws considers leading whitespace invalid
-  // Check the entire string was consumed and if either failbit or badbit is set
+  iss >> std::noskipws >> i;  ///< noskipws considers leading whitespace invalid
+  /// Check the entire string was consumed and if either failbit or badbit is set
   return iss.eof() && !iss.fail();
 }
 
 bool checkIfFloat(const std::string& s) {
   std::istringstream iss(s);
   double d;
-  iss >> std::noskipws >> d;  // noskipws considers leading whitespace invalid
-  // Check the entire string was consumed and if either failbit or badbit is set
+  iss >> std::noskipws >> d;  ///< noskipws considers leading whitespace invalid
+  /// Check the entire string was consumed and if either failbit or badbit is set
   return iss.eof() && !iss.fail();
 }
 
@@ -107,7 +111,7 @@ bool getBoolVal(const std::string& s) {
 
 void ParamManager::ingestParameter(std::string name, std::string val) {
   std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
-  // std::cout << name << " " << val << '\n' << std::endl;
+  /// std::cout << name << " " << val << '\n' << std::endl;
 
   bool isUint = checkIfUint(val);
   unsigned uVal = isUint ? (unsigned)std::stol(val.c_str()) : 0;
@@ -250,7 +254,7 @@ void ParamManager::ingestParameter(std::string name, std::string val) {
 }
 
 void ParamManager::updateFromConfigFile(unsigned generationNumber) {
-  // std::ifstream is RAII, i.e. no need to call close
+  /// std::ifstream is RAII, i.e. no need to call close
   std::ifstream cFile(configFilename.c_str());
   if (cFile.is_open()) {
     std::string line;
@@ -262,7 +266,7 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber) {
       auto delimiterPos = line.find("=");
       auto name = line.substr(0, delimiterPos);
 
-      // Process the generation specifier if present:
+      /// Process the generation specifier if present:
       auto generationDelimiterPos = name.find("@");
       if (generationDelimiterPos < name.size()) {
         auto generationSpecifier = name.substr(generationDelimiterPos + 1);
@@ -273,9 +277,9 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber) {
         }
         unsigned activeFromGeneration = (unsigned)std::stol(generationSpecifier);
         if (activeFromGeneration > generationNumber) {
-          continue;  // This parameter value is not active yet
+          continue;  ///< This parameter value is not active yet
         } else if (activeFromGeneration == generationNumber) {
-          // Parameter value became active at exactly this generation number
+          /// Parameter value became active at exactly this generation number
           privParams.parameterChangeGenerationNumber = generationNumber;
         }
         name = name.substr(0, generationDelimiterPos);
@@ -287,7 +291,7 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber) {
       auto value = value0.substr(0, delimiterComment);
       auto rawValue = value;
       value.erase(std::remove_if(value.begin(), value.end(), isspace), value.end());
-      // std::cout << name << " " << value << '\n' << std::endl;
+      /// std::cout << name << " " << value << '\n' << std::endl;
       ingestParameter(name, value);
     }
   } else {
@@ -295,8 +299,8 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber) {
   }
 }
 
-// Check parameter ranges, reasonableness, coherency, whatever. This is
-// typically called only once after the parameters are first read.
+/// Check parameter ranges, reasonableness, coherency, whatever. This is
+/// typically called only once after the parameters are first read.
 void ParamManager::checkParameters() {
   if (privParams.deterministic && privParams.numThreads != 1) {
     std::cerr << "Warning: When deterministic is true, you probably want to set numThreads = 1." << std::endl;

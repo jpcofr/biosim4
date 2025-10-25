@@ -37,13 +37,13 @@ namespace BioSim {
  */
 struct RandomUintGenerator {
  private:
-  // Marsaglia algorithm state
+  /// Marsaglia algorithm state
   uint32_t rngx;  ///< Marsaglia state X
   uint32_t rngy;  ///< Marsaglia state Y
   uint32_t rngz;  ///< Marsaglia state Z
   uint32_t rngc;  ///< Marsaglia carry bit
 
-  // Jenkins algorithm state
+  /// Jenkins algorithm state
   uint32_t a;  ///< Jenkins state A
   uint32_t b;  ///< Jenkins state B
   uint32_t c;  ///< Jenkins state C
@@ -90,4 +90,4 @@ constexpr uint32_t RANDOM_UINT_MAX = 0xffffffff;
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_RANDOM_H_
+#endif  ///< BIOSIM4_INCLUDE_RANDOM_H_

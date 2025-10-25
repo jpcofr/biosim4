@@ -1,4 +1,4 @@
-// grid.cpp
+/// grid.cpp
 
 #include "simulator.h"
 
@@ -7,13 +7,13 @@
 
 namespace BioSim {
 
-// Allocates space for the 2D grid
+/// Allocates space for the 2D grid
 void Grid::initialize(uint16_t size_X, uint16_t size_Y) {
   auto col = Column(size_Y);
   data = std::vector<Column>(size_X, col);
 }
 
-// Finds a random unoccupied location in the grid
+/// Finds a random unoccupied location in the grid
 Coordinate Grid::findEmptyLocation() const {
   Coordinate loc;
 

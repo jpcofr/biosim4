@@ -1,4 +1,4 @@
-// unitTestGridVisitNeighborhood
+/// unitTestGridVisitNeighborhood
 
 #include "simulator.h"
 
@@ -7,7 +7,7 @@
 namespace BioSim {
 
 void unitTestGridVisitNeighborhood() {
-  // prints each coord:
+  /// prints each coord:
   auto printLoc = [&](Coordinate loc) { std::cout << loc.x << ", " << loc.y << std::endl; };
 
   std::cout << "Test loc 10,10 radius 1" << std::endl;

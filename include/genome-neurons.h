@@ -174,4 +174,4 @@ extern float geneticDiversity();
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_GENOME_NEURONS_H_
+#endif  ///< BIOSIM4_INCLUDE_GENOME_NEURONS_H_

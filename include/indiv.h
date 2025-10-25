@@ -109,4 +109,4 @@ struct Individual {
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_INDIV_H_
+#endif  ///< BIOSIM4_INCLUDE_INDIV_H_

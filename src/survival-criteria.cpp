@@ -1,4 +1,4 @@
-// survival-criteria.cpp
+/// survival-criteria.cpp
 
 #include "simulator.h"
 
@@ -7,15 +7,15 @@
 
 namespace BioSim {
 
-// Returns true and a score 0.0..1.0 if passed, false if failed
+/// Returns true and a score 0.0..1.0 if passed, false if failed
 std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned challenge) {
   if (!indiv.alive) {
     return {false, 0.0};
   }
 
   switch (challenge) {
-    // Survivors are those inside the circular area defined by
-    // safeCenter and radius
+    /// Survivors are those inside the circular area defined by
+    /// safeCenter and radius
     case CHALLENGE_CIRCLE: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 4.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 4.0)};
@@ -27,25 +27,25 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
                                 : std::pair<bool, float>{false, 0.0};
     }
 
-    // Survivors are all those on the right side of the arena
+    /// Survivors are all those on the right side of the arena
     case CHALLENGE_RIGHT_HALF:
       return indiv.loc.x > parameterMngrSingleton.gridSize_X / 2 ? std::pair<bool, float>{true, 1.0}
                                                                  : std::pair<bool, float>{false, 0.0};
 
-    // Survivors are all those on the right quarter of the arena
+    /// Survivors are all those on the right quarter of the arena
     case CHALLENGE_RIGHT_QUARTER:
       return indiv.loc.x > parameterMngrSingleton.gridSize_X / 2 + parameterMngrSingleton.gridSize_X / 4
                  ? std::pair<bool, float>{true, 1.0}
                  : std::pair<bool, float>{false, 0.0};
 
-    // Survivors are all those on the left eighth of the arena
+    /// Survivors are all those on the left eighth of the arena
     case CHALLENGE_LEFT_EIGHTH:
       return indiv.loc.x < parameterMngrSingleton.gridSize_X / 8 ? std::pair<bool, float>{true, 1.0}
                                                                  : std::pair<bool, float>{false, 0.0};
 
-    // Survivors are those not touching the border and with exactly the number
-    // of neighbors defined by neighbors and radius, where neighbors includes
-    // self
+    /// Survivors are those not touching the border and with exactly the number
+    /// of neighbors defined by neighbors and radius, where neighbors includes
+    /// self
     case CHALLENGE_STRING: {
       unsigned minNeighbors = 22;
       unsigned maxNeighbors = 2;
@@ -69,8 +69,8 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    // Survivors are those within the specified radius of the center. The score
-    // is linearly weighted by distance from the center.
+    /// Survivors are those within the specified radius of the center. The score
+    /// is linearly weighted by distance from the center.
     case CHALLENGE_CENTER_WEIGHTED: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 2.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 2.0)};
@@ -82,7 +82,7 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
                                 : std::pair<bool, float>{false, 0.0};
     }
 
-    // Survivors are those within the specified radius of the center
+    /// Survivors are those within the specified radius of the center
     case CHALLENGE_CENTER_UNWEIGHTED: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 2.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 2.0)};
@@ -93,15 +93,15 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return distance <= radius ? std::pair<bool, float>{true, 1.0} : std::pair<bool, float>{false, 0.0};
     }
 
-    // Survivors are those within the specified outer radius of the center and
-    // with the specified number of neighbors in the specified inner radius. The
-    // score is not weighted by distance from the center.
+    /// Survivors are those within the specified outer radius of the center and
+    /// with the specified number of neighbors in the specified inner radius. The
+    /// score is not weighted by distance from the center.
     case CHALLENGE_CENTER_SPARSE: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 2.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 2.0)};
       float outerRadius = parameterMngrSingleton.gridSize_X / 4.0;
       float innerRadius = 1.5;
-      unsigned minNeighbors = 5;  // includes self
+      unsigned minNeighbors = 5;  ///< includes self
       unsigned maxNeighbors = 8;
 
       Coordinate offset = safeCenter - indiv.loc;
@@ -121,8 +121,8 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return {false, 0.0};
     }
 
-    // Survivors are those within the specified radius of any corner.
-    // Assumes square arena.
+    /// Survivors are those within the specified radius of any corner.
+    /// Assumes square arena.
     case CHALLENGE_CORNER: {
       assert(parameterMngrSingleton.gridSize_X == parameterMngrSingleton.gridSize_Y);
       float radius = parameterMngrSingleton.gridSize_X / 8.0;
@@ -147,8 +147,8 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return {false, 0.0};
     }
 
-    // Survivors are those within the specified radius of any corner. The score
-    // is linearly weighted by distance from the corner point.
+    /// Survivors are those within the specified radius of any corner. The score
+    /// is linearly weighted by distance from the corner point.
     case CHALLENGE_CORNER_WEIGHTED: {
       assert(parameterMngrSingleton.gridSize_X == parameterMngrSingleton.gridSize_Y);
       float radius = parameterMngrSingleton.gridSize_X / 4.0;
@@ -173,13 +173,13 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return {false, 0.0};
     }
 
-    // This challenge is handled in endOfSimStep(), where individuals may die
-    // at the end of any sim step. There is nothing else to do here at the
-    // end of a generation. All remaining alive become parents.
+    /// This challenge is handled in endOfSimStep(), where individuals may die
+    /// at the end of any sim step. There is nothing else to do here at the
+    /// end of a generation. All remaining alive become parents.
     case CHALLENGE_RADIOACTIVE_WALLS:
       return {true, 1.0};
 
-    // Survivors are those touching any wall at the end of the generation
+    /// Survivors are those touching any wall at the end of the generation
     case CHALLENGE_AGAINST_ANY_WALL: {
       bool onEdge = indiv.loc.x == 0 || indiv.loc.x == parameterMngrSingleton.gridSize_X - 1 || indiv.loc.y == 0 ||
                     indiv.loc.y == parameterMngrSingleton.gridSize_Y - 1;
@@ -191,11 +191,11 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    // This challenge is partially handled in endOfSimStep(), where individuals
-    // that are touching a wall are flagged in their Indiv record. They are
-    // allowed to continue living. Here at the end of the generation, any that
-    // never touch a wall will die. All that touched a wall at any time during
-    // their life will become parents.
+    /// This challenge is partially handled in endOfSimStep(), where individuals
+    /// that are touching a wall are flagged in their Indiv record. They are
+    /// allowed to continue living. Here at the end of the generation, any that
+    /// never touch a wall will die. All that touched a wall at any time during
+    /// their life will become parents.
     case CHALLENGE_TOUCH_ANY_WALL:
       if (indiv.challengeBits != 0) {
         return {true, 1.0};
@@ -203,29 +203,29 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
         return {false, 0.0};
       }
 
-    // Everybody survives and are candidate parents, but scored by how far
-    // they migrated from their birth location.
+    /// Everybody survives and are candidate parents, but scored by how far
+    /// they migrated from their birth location.
     case CHALLENGE_MIGRATE_DISTANCE: {
-      // unsigned requiredDistance = p.sizeX / 2.0;
+      /// unsigned requiredDistance = p.sizeX / 2.0;
       float distance = (indiv.loc - indiv.birthLoc).length();
       distance = distance / (float)(std::max(parameterMngrSingleton.gridSize_X, parameterMngrSingleton.gridSize_Y));
       return {true, distance};
     }
 
-    // Survivors are all those on the left or right eighths of the arena
+    /// Survivors are all those on the left or right eighths of the arena
     case CHALLENGE_EAST_WEST_EIGHTHS:
       return indiv.loc.x < parameterMngrSingleton.gridSize_X / 8 ||
                      indiv.loc.x >= (parameterMngrSingleton.gridSize_X - parameterMngrSingleton.gridSize_X / 8)
                  ? std::pair<bool, float>{true, 1.0}
                  : std::pair<bool, float>{false, 0.0};
 
-    // Survivors are those within radius of any barrier center. Weighted by
-    // distance.
+    /// Survivors are those within radius of any barrier center. Weighted by
+    /// distance.
     case CHALLENGE_NEAR_BARRIER: {
       float radius;
-      // radius = 20.0;
+      /// radius = 20.0;
       radius = parameterMngrSingleton.gridSize_X / 2;
-      // radius = p.sizeX / 4;
+      /// radius = p.sizeX / 4;
 
       const std::vector<Coordinate> barrierCenters = grid.getBarrierCenters();
       float minDistance = 1e8;
@@ -242,8 +242,8 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    // Survivors are those not touching a border and with exactly one neighbor
-    // which has no other neighbor
+    /// Survivors are those not touching a border and with exactly one neighbor
+    /// which has no other neighbor
     case CHALLENGE_PAIRS: {
       bool onEdge = indiv.loc.x == 0 || indiv.loc.x == parameterMngrSingleton.gridSize_X - 1 || indiv.loc.y == 0 ||
                     indiv.loc.y == parameterMngrSingleton.gridSize_Y - 1;
@@ -280,9 +280,9 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    // Survivors are those that contacted one or more specified locations in a
-    // sequence, ranked by the number of locations contacted. There will be a
-    // bit set in their challengeBits member for each location contacted.
+    /// Survivors are those that contacted one or more specified locations in a
+    /// sequence, ranked by the number of locations contacted. There will be a
+    /// bit set in their challengeBits member for each location contacted.
     case CHALLENGE_LOCATION_SEQUENCE: {
       unsigned count = 0;
       unsigned bits = indiv.challengeBits;
@@ -300,11 +300,11 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     } break;
 
-    // Survivors are all those within the specified radius of the NE corner
+    /// Survivors are all those within the specified radius of the NE corner
     case CHALLENGE_ALTRUISM_SACRIFICE: {
-      // float radius = p.sizeX / 3.0; // in 128^2 world, holds 1429 agents
-      float radius = parameterMngrSingleton.gridSize_X / 4.0;  // in 128^2 world, holds 804 agents
-      // float radius = p.sizeX / 5.0; // in 128^2 world, holds 514 agents
+      /// float radius = p.sizeX / 3.0; // in 128^2 world, holds 1429 agents
+      float radius = parameterMngrSingleton.gridSize_X / 4.0;  ///< in 128^2 world, holds 804 agents
+      /// float radius = p.sizeX / 5.0; // in 128^2 world, holds 514 agents
 
       float distance = (Coordinate(parameterMngrSingleton.gridSize_X - parameterMngrSingleton.gridSize_X / 4,
                                    parameterMngrSingleton.gridSize_Y - parameterMngrSingleton.gridSize_Y / 4) -
@@ -317,12 +317,12 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    // Survivors are those inside the circular area defined by
-    // safeCenter and radius
+    /// Survivors are those inside the circular area defined by
+    /// safeCenter and radius
     case CHALLENGE_ALTRUISM: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 4.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 4.0)};
-      float radius = parameterMngrSingleton.gridSize_X / 4.0;  // in a 128^2 world, holds 3216
+      float radius = parameterMngrSingleton.gridSize_X / 4.0;  ///< in a 128^2 world, holds 3216
 
       Coordinate offset = safeCenter - indiv.loc;
       float distance = offset.length();

@@ -9,13 +9,13 @@
  * challenge type constants. Also see simulator.cpp for implementation.
  */
 
-#include "basicTypes.h"  // types Dir, Coordinate, Polar
-#include "grid.h"        // 2D world where the individuals live
-#include "indiv.h"       // Individual agent data structure
-#include "params.h"      // Configuration parameters
-#include "peeps.h"       // Population container
-#include "random.h"      // Random number generation
-#include "signals.h"     // Pheromone layers
+#include "basicTypes.h"  ///< types Dir, Coordinate, Polar
+#include "grid.h"        ///< 2D world where the individuals live
+#include "indiv.h"       ///< Individual agent data structure
+#include "params.h"      ///< Configuration parameters
+#include "peeps.h"       ///< Population container
+#include "random.h"      ///< Random number generation
+#include "signals.h"     ///< Pheromone layers
 
 namespace BioSim {
 
@@ -112,4 +112,4 @@ extern void visitNeighborhood(Coordinate loc, float radius, std::function<void(C
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_SIMULATOR_H_
+#endif  ///< BIOSIM4_INCLUDE_SIMULATOR_H_

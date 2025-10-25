@@ -244,4 +244,4 @@ extern void unitTestGridVisitNeighborhood();
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_GRID_H_
+#endif  ///< BIOSIM4_INCLUDE_GRID_H_

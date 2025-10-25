@@ -1,8 +1,8 @@
 #ifndef BIOSIM_IMAGEWRITER_H_INCLUDED
 #define BIOSIM_IMAGEWRITER_H_INCLUDED
 
-// Creates a graphic frame for each simStep, then
-// assembles them into a video at the end of a generation.
+/// Creates a graphic frame for each simStep, then
+/// assembles them into a video at the end of a generation.
 
 #include "indiv.h"
 #include "params.h"
@@ -16,9 +16,9 @@
 
 namespace BioSim {
 
-// This holds all data needed to construct one image frame. The data is
-// cached in this structure so that the image writer can work on it in
-// a separate thread while the main thread starts a new simstep.
+/// This holds all data needed to construct one image frame. The data is
+/// cached in this structure so that the image writer can work on it in
+/// a separate thread while the main thread starts a new simstep.
 struct ImageFrameData {
   unsigned simStep;
   unsigned generation;
@@ -27,8 +27,8 @@ struct ImageFrameData {
   std::vector<Coordinate> indivLocs;
   std::vector<uint8_t> indivColors;
   std::vector<Coordinate> barrierLocs;
-  typedef std::vector<std::vector<uint8_t>> SignalLayer;  // [x][y]
-  std::vector<SignalLayer> signalLayers;                  // [layer][x][y]
+  typedef std::vector<std::vector<uint8_t>> SignalLayer;  ///< [x][y]
+  std::vector<SignalLayer> signalLayers;                  ///< [layer][x][y]
 };
 
 struct ImageWriter {
@@ -39,7 +39,7 @@ struct ImageWriter {
   bool saveVideoFrameSync(unsigned simStep, unsigned generation, unsigned challenge, unsigned barrierType);
   void saveGenerationVideo(unsigned generation);
   void abort();
-  void saveFrameThread();  // runs in a thread
+  void saveFrameThread();  ///< runs in a thread
   std::atomic<unsigned> droppedFrameCount;
 
  private:
@@ -57,4 +57,4 @@ extern ImageWriter imageWriter;
 
 }  // namespace BioSim
 
-#endif  // BIOSIM_IMAGEWRITER_H_INCLUDED
+#endif  ///< BIOSIM_IMAGEWRITER_H_INCLUDED

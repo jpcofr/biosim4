@@ -1,4 +1,4 @@
-// genome.cpp
+/// genome.cpp
 
 #include "random.h"
 #include "simulator.h"
@@ -12,13 +12,13 @@
 
 namespace BioSim {
 
-// This structure is used while converting the connection list to a
-// neural net. This helps us to find neurons that don't feed anything
-// so that they can be removed along with all the connections that
-// feed the useless neurons. We'll cull neurons with .numOutputs == 0
-// or those that only feed themselves, i.e., .numSelfInputs == .numOutputs.
-// Finally, we'll renumber the remaining neurons sequentially starting
-// at zero using the .remappedNumber member.
+/// This structure is used while converting the connection list to a
+/// neural net. This helps us to find neurons that don't feed anything
+/// so that they can be removed along with all the connections that
+/// feed the useless neurons. We'll cull neurons with .numOutputs == 0
+/// or those that only feed themselves, i.e., .numSelfInputs == .numOutputs.
+/// Finally, we'll renumber the remaining neurons sequentially starting
+/// at zero using the .remappedNumber member.
 struct Node {
   uint16_t remappedNumber;
   uint16_t numOutputs;
@@ -26,18 +26,18 @@ struct Node {
   uint16_t numInputsFromSensorsOrOtherNeurons;
 };
 
-// Two neuron renumberings occur: The original genome uses a uint16_t for
-// neuron numbers. The first renumbering maps 16-bit unsigned neuron numbers
-// to the range 0..p.maxNumberNeurons - 1. After culling useless neurons
-// (see comments above), we'll renumber the remaining neurons sequentially
-// starting at 0.
-typedef std::map<uint16_t, Node> NodeMap;  // key is neuron number 0..p.maxNumberNeurons - 1
+/// Two neuron renumberings occur: The original genome uses a uint16_t for
+/// neuron numbers. The first renumbering maps 16-bit unsigned neuron numbers
+/// to the range 0..p.maxNumberNeurons - 1. After culling useless neurons
+/// (see comments above), we'll renumber the remaining neurons sequentially
+/// starting at 0.
+typedef std::map<uint16_t, Node> NodeMap;  ///< key is neuron number 0..p.maxNumberNeurons - 1
 
 typedef std::list<Gene> ConnectionList;
 
-// Returns by value a single gene with random members.
-// See genome.h for the width of the members.
-// TODO don't assume the width of the members in gene.
+/// Returns by value a single gene with random members.
+/// See genome.h for the width of the members.
+/// TODO don't assume the width of the members in gene.
 Gene makeRandomGene() {
   Gene gene;
 
@@ -50,7 +50,7 @@ Gene makeRandomGene() {
   return gene;
 }
 
-// Returns by value a single genome with random genes.
+/// Returns by value a single genome with random genes.
 Genome makeRandomGenome() {
   Genome genome;
 
@@ -63,11 +63,11 @@ Genome makeRandomGenome() {
   return genome;
 }
 
-// Convert the indiv's genome to a renumbered connection list.
-// This renumbers the neurons from their uint16_t values in the genome
-// to the range 0..p.maxNumberNeurons - 1 by using a modulo operator.
-// Sensors are renumbered 0..Sensor::NUM_SENSES - 1
-// Actions are renumbered 0..Action::NUM_ACTIONS - 1
+/// Convert the indiv's genome to a renumbered connection list.
+/// This renumbers the neurons from their uint16_t values in the genome
+/// to the range 0..p.maxNumberNeurons - 1 by using a modulo operator.
+/// Sensors are renumbered 0..Sensor::NUM_SENSES - 1
+/// Actions are renumbered 0..Action::NUM_ACTIONS - 1
 void makeRenumberedConnectionList(ConnectionList& connectionList, const Genome& genome) {
   connectionList.clear();
   for (auto const& gene : genome) {
@@ -88,9 +88,9 @@ void makeRenumberedConnectionList(ConnectionList& connectionList, const Genome& 
   }
 }
 
-// Scan the connections and make a list of all the neuron numbers
-// mentioned in the connections. Also keep track of how many inputs and
-// outputs each neuron has.
+/// Scan the connections and make a list of all the neuron numbers
+/// mentioned in the connections. Also keep track of how many inputs and
+/// outputs each neuron has.
 void makeNodeList(NodeMap& nodeMap, const ConnectionList& connectionList) {
   nodeMap.clear();
 
@@ -131,13 +131,13 @@ void makeNodeList(NodeMap& nodeMap, const ConnectionList& connectionList) {
   }
 }
 
-// During the culling process, we will remove any neuron that has no outputs,
-// and all the connections that feed the useless neuron.
+/// During the culling process, we will remove any neuron that has no outputs,
+/// and all the connections that feed the useless neuron.
 void removeConnectionsToNeuron(ConnectionList& connections, NodeMap& nodeMap, uint16_t neuronNumber) {
   for (auto itConn = connections.begin(); itConn != connections.end();) {
     if (itConn->sinkType == NEURON && itConn->sinkNum == neuronNumber) {
-      // Remove the connection. If the connection source is from another
-      // neuron, also decrement the other neuron's numOutputs:
+      /// Remove the connection. If the connection source is from another
+      /// neuron, also decrement the other neuron's numOutputs:
       if (itConn->sourceType == NEURON) {
         --(nodeMap[itConn->sourceNum].numOutputs);
       }
@@ -148,21 +148,21 @@ void removeConnectionsToNeuron(ConnectionList& connections, NodeMap& nodeMap, ui
   }
 }
 
-// If a neuron has no outputs or only outputs that feed itself, then we
-// remove it along with all connections that feed it. Reiterative, because
-// after we remove a connection to a useless neuron, it may result in a
-// different neuron having no outputs.
+/// If a neuron has no outputs or only outputs that feed itself, then we
+/// remove it along with all connections that feed it. Reiterative, because
+/// after we remove a connection to a useless neuron, it may result in a
+/// different neuron having no outputs.
 void cullUselessNeurons(ConnectionList& connections, NodeMap& nodeMap) {
   bool allDone = false;
   while (!allDone) {
     allDone = true;
     for (auto itNeuron = nodeMap.begin(); itNeuron != nodeMap.end();) {
       assert(itNeuron->first < parameterMngrSingleton.maxNumberNeurons);
-      // We're looking for neurons with zero outputs, or neurons that feed
-      // itself and nobody else:
-      if (itNeuron->second.numOutputs == itNeuron->second.numSelfInputs) {  // could be 0
+      /// We're looking for neurons with zero outputs, or neurons that feed
+      /// itself and nobody else:
+      if (itNeuron->second.numOutputs == itNeuron->second.numSelfInputs) {  ///< could be 0
         allDone = false;
-        // Find and remove connections from sensors or other neurons
+        /// Find and remove connections from sensors or other neurons
         removeConnectionsToNeuron(connections, nodeMap, itNeuron->first);
         itNeuron = nodeMap.erase(itNeuron);
       } else {
@@ -172,34 +172,34 @@ void cullUselessNeurons(ConnectionList& connections, NodeMap& nodeMap) {
   }
 }
 
-// This function is used when an agent is spawned. This function converts the
-// agent's inherited genome into the agent's neural net brain. There is a close
-// correspondence between the genome and the neural net, but a connection
-// specified in the genome will not be represented in the neural net if the
-// connection feeds a neuron that does not itself feed anything else.
-// Neurons get renumbered in the process:
-// 1. Create a set of referenced neuron numbers where each index is in the
-//    range 0..p.genomeMaxLength-1, keeping a count of outputs for each neuron.
-// 2. Delete any referenced neuron index that has no outputs or only feeds
-// itself.
-// 3. Renumber the remaining neurons sequentially starting at 0.
+/// This function is used when an agent is spawned. This function converts the
+/// agent's inherited genome into the agent's neural net brain. There is a close
+/// correspondence between the genome and the neural net, but a connection
+/// specified in the genome will not be represented in the neural net if the
+/// connection feeds a neuron that does not itself feed anything else.
+/// Neurons get renumbered in the process:
+/// 1. Create a set of referenced neuron numbers where each index is in the
+///    range 0..p.genomeMaxLength-1, keeping a count of outputs for each neuron.
+/// 2. Delete any referenced neuron index that has no outputs or only feeds
+/// itself.
+/// 3. Renumber the remaining neurons sequentially starting at 0.
 void Individual::createWiringFromGenome() {
-  NodeMap nodeMap;                // list of neurons and their number of inputs and outputs
-  ConnectionList connectionList;  // synaptic connections
+  NodeMap nodeMap;                ///< list of neurons and their number of inputs and outputs
+  ConnectionList connectionList;  ///< synaptic connections
 
-  // Convert the indiv's genome to a renumbered connection list
+  /// Convert the indiv's genome to a renumbered connection list
   makeRenumberedConnectionList(connectionList, genome);
 
-  // Make a node (neuron) list from the renumbered connection list
+  /// Make a node (neuron) list from the renumbered connection list
   makeNodeList(nodeMap, connectionList);
 
-  // Find and remove neurons that don't feed anything or only feed themself.
-  // This reiteratively removes all connections to the useless neurons.
+  /// Find and remove neurons that don't feed anything or only feed themself.
+  /// This reiteratively removes all connections to the useless neurons.
   cullUselessNeurons(connectionList, nodeMap);
 
-  // The neurons map now has all the referenced neurons, their neuron numbers,
-  // and the number of outputs for each neuron. Now we'll renumber the neurons
-  // starting at zero.
+  /// The neurons map now has all the referenced neurons, their neuron numbers,
+  /// and the number of outputs for each neuron. Now we'll renumber the neurons
+  /// starting at zero.
 
   assert(nodeMap.size() <= parameterMngrSingleton.maxNumberNeurons);
   uint16_t newNumber = 0;
@@ -208,39 +208,39 @@ void Individual::createWiringFromGenome() {
     node.second.remappedNumber = newNumber++;
   }
 
-  // Create the indiv's connection list in two passes:
-  // First the connections to neurons, then the connections to actions.
-  // This ordering optimizes the feed-forward function in feedForward.cpp.
+  /// Create the indiv's connection list in two passes:
+  /// First the connections to neurons, then the connections to actions.
+  /// This ordering optimizes the feed-forward function in feedForward.cpp.
 
   nnet.connections.clear();
 
-  // First, the connections from sensor or neuron to a neuron
+  /// First, the connections from sensor or neuron to a neuron
   for (auto const& conn : connectionList) {
     if (conn.sinkType == NEURON) {
       nnet.connections.push_back(conn);
       auto& newConn = nnet.connections.back();
-      // fix the destination neuron number
+      /// fix the destination neuron number
       newConn.sinkNum = nodeMap[newConn.sinkNum].remappedNumber;
-      // if the source is a neuron, fix its number too
+      /// if the source is a neuron, fix its number too
       if (newConn.sourceType == NEURON) {
         newConn.sourceNum = nodeMap[newConn.sourceNum].remappedNumber;
       }
     }
   }
 
-  // Last, the connections from sensor or neuron to an action
+  /// Last, the connections from sensor or neuron to an action
   for (auto const& conn : connectionList) {
     if (conn.sinkType == ACTION) {
       nnet.connections.push_back(conn);
       auto& newConn = nnet.connections.back();
-      // if the source is a neuron, fix its number
+      /// if the source is a neuron, fix its number
       if (newConn.sourceType == NEURON) {
         newConn.sourceNum = nodeMap[newConn.sourceNum].remappedNumber;
       }
     }
   }
 
-  // Create the indiv's neural node list
+  /// Create the indiv's neural node list
   nnet.neurons.clear();
   for (unsigned neuronNum = 0; neuronNum < nodeMap.size(); ++neuronNum) {
     nnet.neurons.push_back({});
@@ -249,9 +249,9 @@ void Individual::createWiringFromGenome() {
   }
 }
 
-// ---------------------------------------------------------------------------
+/// ---------------------------------------------------------------------------
 
-// This applies a point mutation at a random bit in a genome.
+/// This applies a point mutation at a random bit in a genome.
 void randomBitFlip(Genome& genome) {
   int method = 1;
 
@@ -262,16 +262,16 @@ void randomBitFlip(Genome& genome) {
   if (method == 0) {
     ((uint8_t*)&genome[0])[byteIndex] ^= bitIndex8;
   } else if (method == 1) {
-    float chance = randomUint() / (float)RANDOM_UINT_MAX;  // 0..1
-    if (chance < 0.2) {                                    // sourceType
+    float chance = randomUint() / (float)RANDOM_UINT_MAX;  ///< 0..1
+    if (chance < 0.2) {                                    ///< sourceType
       genome[elementIndex].sourceType ^= 1;
-    } else if (chance < 0.4) {  // sinkType
+    } else if (chance < 0.4) {  ///< sinkType
       genome[elementIndex].sinkType ^= 1;
-    } else if (chance < 0.6) {  // sourceNum
+    } else if (chance < 0.6) {  ///< sourceNum
       genome[elementIndex].sourceNum ^= bitIndex8;
-    } else if (chance < 0.8) {  // sinkNum
+    } else if (chance < 0.8) {  ///< sinkNum
       genome[elementIndex].sinkNum ^= bitIndex8;
-    } else {  // weight
+    } else {  ///< weight
       genome[elementIndex].weight ^= (1 << randomUint(1, 15));
     }
   } else {
@@ -279,45 +279,45 @@ void randomBitFlip(Genome& genome) {
   }
 }
 
-// If the genome is longer than the prescribed length, and if it's longer
-// than one gene, then we remove genes from the front or back. This is
-// used only when the simulator is configured to allow genomes of
-// unequal lengths during a simulation.
+/// If the genome is longer than the prescribed length, and if it's longer
+/// than one gene, then we remove genes from the front or back. This is
+/// used only when the simulator is configured to allow genomes of
+/// unequal lengths during a simulation.
 void cropLength(Genome& genome, unsigned length) {
   if (genome.size() > length && length > 0) {
     if (randomUint() / (float)RANDOM_UINT_MAX < 0.5) {
-      // trim front
+      /// trim front
       unsigned numberElementsToTrim = genome.size() - length;
       genome.erase(genome.begin(), genome.begin() + numberElementsToTrim);
     } else {
-      // trim back
+      /// trim back
       genome.erase(genome.end() - (genome.size() - length), genome.end());
     }
   }
 }
 
-// Inserts or removes a single gene from the genome. This is
-// used only when the simulator is configured to allow genomes of
-// unequal lengths during a simulation.
+/// Inserts or removes a single gene from the genome. This is
+/// used only when the simulator is configured to allow genomes of
+/// unequal lengths during a simulation.
 void randomInsertDeletion(Genome& genome) {
   float probability = parameterMngrSingleton.geneInsertionDeletionRate;
   if (randomUint() / (float)RANDOM_UINT_MAX < probability) {
     if (randomUint() / (float)RANDOM_UINT_MAX < parameterMngrSingleton.deletionRatio) {
-      // deletion
+      /// deletion
       if (genome.size() > 1) {
         genome.erase(genome.begin() + randomUint(0, genome.size() - 1));
       }
     } else if (genome.size() < parameterMngrSingleton.genomeMaxLength) {
-      // insertion
-      // genome.insert(genome.begin() + randomUint(0, genome.size() - 1),
-      // makeRandomGene());
+      /// insertion
+      /// genome.insert(genome.begin() + randomUint(0, genome.size() - 1),
+      /// makeRandomGene());
       genome.push_back(makeRandomGene());
     }
   }
 }
 
-// This function causes point mutations in a genome with a probability defined
-// by the parameter p.pointMutationRate.
+/// This function causes point mutations in a genome with a probability defined
+/// by the parameter p.pointMutationRate.
 void applyPointMutations(Genome& genome) {
   unsigned numberOfGenes = genome.size();
   while (numberOfGenes-- > 0) {
@@ -327,24 +327,24 @@ void applyPointMutations(Genome& genome) {
   }
 }
 
-// This generates a child genome from one or two parent genomes.
-// If the parameter p.sexualReproduction is true, two parents contribute
-// genes to the offspring. The new genome may undergo mutation.
-// Must be called in single-thread mode between generations
+/// This generates a child genome from one or two parent genomes.
+/// If the parameter p.sexualReproduction is true, two parents contribute
+/// genes to the offspring. The new genome may undergo mutation.
+/// Must be called in single-thread mode between generations
 Genome generateChildGenome(const std::vector<Genome>& parentGenomes) {
-  // random parent (or parents if sexual reproduction) with random
-  // mutations
+  /// random parent (or parents if sexual reproduction) with random
+  /// mutations
   Genome genome;
 
   uint16_t parent1Idx;
   uint16_t parent2Idx;
 
-  // Choose two parents randomly from the candidates. If the parameter
-  // p.chooseParentsByFitness is false, then we choose at random from
-  // all the candidate parents with equal preference. If the parameter is
-  // true, then we give preference to candidate parents according to their
-  // score. Their score was computed by the survival/selection algorithm
-  // in survival-criteria.cpp.
+  /// Choose two parents randomly from the candidates. If the parameter
+  /// p.chooseParentsByFitness is false, then we choose at random from
+  /// all the candidate parents with equal preference. If the parameter is
+  /// true, then we give preference to candidate parents according to their
+  /// score. Their score was computed by the survival/selection algorithm
+  /// in survival-criteria.cpp.
   if (parameterMngrSingleton.chooseParentsByFitness && parentGenomes.size() > 1) {
     parent1Idx = randomUint(1, parentGenomes.size() - 1);
     parent2Idx = randomUint(0, parent1Idx - 1);
@@ -381,9 +381,9 @@ Genome generateChildGenome(const std::vector<Genome>& parentGenomes) {
       assert(!genome.empty());
     }
 
-    // Trim to length = average length of parents
+    /// Trim to length = average length of parents
     unsigned sum = g1.size() + g2.size();
-    // If average length is not an integral number, add one half the time
+    /// If average length is not an integral number, add one half the time
     if ((sum & 1) && (randomUint() & 1)) {
       ++sum;
     }

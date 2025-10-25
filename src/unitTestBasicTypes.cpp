@@ -1,6 +1,6 @@
-// unitTestBasicTypes.cpp
-// This tests the types Dir, Coord, and Polar, and enum Compass.
-// See basicTypes.h for more info about the basic types.
+/// unitTestBasicTypes.cpp
+/// This tests the types Dir, Coord, and Polar, and enum Compass.
+/// See basicTypes.h for more info about the basic types.
 
 #include "basicTypes.h"
 
@@ -9,18 +9,18 @@
 
 namespace BioSim {
 
-// returns true only if a and b are the same to within
-// 4 digits accuracy
+/// returns true only if a and b are the same to within
+/// 4 digits accuracy
 bool areClosef(float a, float b) {
   return std::abs(a - b) < 0.0001;
 }
 
 bool unitTestBasicTypes() {
-  // Dir
+  /// Dir
 
-  // ctor from Compass
-  // .asInt()
-  // copy assignment
+  /// ctor from Compass
+  /// .asInt()
+  /// copy assignment
   Dir d1 = Dir(Compass::N);
   Dir d2 = Dir(Compass::CENTER);
   d1 = d2;
@@ -62,13 +62,13 @@ bool unitTestBasicTypes() {
   d2 = d1;
   assert(d1.asInt() == 5);
 
-  // .operator=() from Compass
+  /// .operator=() from Compass
   d1 = Compass::SW;
   assert(d1.asInt() == 0);
   d1 = Compass::SE;
   assert(d1.asInt() == 2);
 
-  // [in]equality with Compass
+  /// [in]equality with Compass
   d1 = Compass::CENTER;
   assert(d1 == Compass::CENTER);
   d1 = Compass::SE;
@@ -76,7 +76,7 @@ bool unitTestBasicTypes() {
   assert(Dir(Compass::W) == Compass::W);
   assert(Dir(Compass::W) != Compass::NW);
 
-  // [in]equality with Dir
+  /// [in]equality with Dir
   d1 = Compass::N;
   d2 = Compass::N;
   assert(d1 == d2);
@@ -85,7 +85,7 @@ bool unitTestBasicTypes() {
   assert(d1 != d2);
   assert(d2 != d1);
 
-  // .rotate()
+  /// .rotate()
   assert(d1.rotate(1) == Compass::E);
   assert(d1.rotate(2) == Compass::SE);
   assert(d1.rotate(-1) == Compass::N);
@@ -93,7 +93,7 @@ bool unitTestBasicTypes() {
   assert(Dir(Compass::N).rotate(1) == d1);
   assert(Dir(Compass::SW).rotate(-2) == Compass::SE);
 
-  // .asNormalizedCoord()
+  /// .asNormalizedCoord()
   Coordinate c1 = Dir(Compass::CENTER).asNormalizedCoord();
   assert(c1.x == 0 && c1.y == 0);
   d1 = Compass::SW;
@@ -114,7 +114,7 @@ bool unitTestBasicTypes() {
   c1 = Dir(Compass::NE).asNormalizedCoord();
   assert(c1.x == 1 && c1.y == 1);
 
-  // .asNormalizedPolar()
+  /// .asNormalizedPolar()
   d1 = Compass::SW;
   Polar p1 = d1.asNormalizedPolar();
   assert(p1.mag == 1 && p1.dir == Compass::SW);
@@ -133,8 +133,8 @@ bool unitTestBasicTypes() {
   p1 = Dir(Compass::NE).asNormalizedPolar();
   assert(p1.mag == 1 && p1.dir == Compass::NE);
 
-  // Coord
-  // ctor from int16_t,int16_t
+  /// Coord
+  /// ctor from int16_t,int16_t
   c1 = Coordinate();
   assert(c1.x == 0 && c1.y == 0);
   c1 = Coordinate(1, 1);
@@ -142,13 +142,13 @@ bool unitTestBasicTypes() {
   c1 = Coordinate(-6, 12);
   assert(c1.x == -6 && c1.y == 12);
 
-  // copy assignment
+  /// copy assignment
   Coordinate c2 = Coordinate(9, 101);
   assert(c2.x == 9 && c2.y == 101);
   c1 = c2;
   assert(c1.x == 9 && c2.y == 101);
 
-  // .isNormalized()
+  /// .isNormalized()
   assert(!c1.isNormalized());
   assert(Coordinate(0, 0).isNormalized());
   assert(Coordinate(0, 1).isNormalized());
@@ -160,8 +160,8 @@ bool unitTestBasicTypes() {
   assert(!Coordinate(-1, 2).isNormalized());
   assert(!Coordinate(-2, 0).isNormalized());
 
-  // .normalize()
-  // .asDir()
+  /// .normalize()
+  /// .asDir()
   c1 = Coordinate(0, 0);
   c2 = c1.normalize();
   assert(c2.x == 0 && c2.y == 0);
@@ -197,27 +197,27 @@ bool unitTestBasicTypes() {
   assert(c1.x == 1 && c1.y == 0);
   assert(c1.asDir() == Compass::E);
 
-  // .length()
+  /// .length()
   assert(Coordinate(0, 0).length() == 0);
   assert(Coordinate(0, 1).length() == 1);
   assert(Coordinate(-1, 0).length() == 1);
-  assert(Coordinate(-1, -1).length() == 1);  // round down
+  assert(Coordinate(-1, -1).length() == 1);  ///< round down
   assert(Coordinate(22, 0).length() == 22);
-  assert(Coordinate(22, 22).length() == 31);   // round down
-  assert(Coordinate(10, -10).length() == 14);  // round down
+  assert(Coordinate(22, 22).length() == 31);   ///< round down
+  assert(Coordinate(10, -10).length() == 14);  ///< round down
   assert(Coordinate(-310, 0).length() == 310);
 
-  // .asPolar()
+  /// .asPolar()
   p1 = Coordinate(0, 0).asPolar();
   assert(p1.mag == 0 && p1.dir == Compass::CENTER);
   p1 = Coordinate(0, 1).asPolar();
   assert(p1.mag == 1 && p1.dir == Compass::N);
   p1 = Coordinate(-10, -10).asPolar();
-  assert(p1.mag == 14 && p1.dir == Compass::SW);  // round down mag
+  assert(p1.mag == 14 && p1.dir == Compass::SW);  ///< round down mag
   p1 = Coordinate(100, 1).asPolar();
-  assert(p1.mag == 100 && p1.dir == Compass::E);  // round down mag
+  assert(p1.mag == 100 && p1.dir == Compass::E);  ///< round down mag
 
-  // operator+(Coord), operator-(Coord)
+  /// operator+(Coord), operator-(Coord)
   c1 = Coordinate(0, 0) + Coordinate(6, 8);
   assert(c1.x == 6 && c1.y == 8);
   c1 = Coordinate(-70, 20) + Coordinate(10, -10);
@@ -225,7 +225,7 @@ bool unitTestBasicTypes() {
   c1 = Coordinate(-70, 20) - Coordinate(10, -10);
   assert(c1.x == -80 && c1.y == 30);
 
-  // operator*(int)
+  /// operator*(int)
   c1 = Coordinate(0, 0) * 1;
   assert(c1.x == 0 && c1.y == 0);
   c1 = Coordinate(1, 1) * -5;
@@ -233,7 +233,7 @@ bool unitTestBasicTypes() {
   c1 = Coordinate(11, 5) * -5;
   assert(c1.x == -55 && c1.y == -25);
 
-  // operator+(Dir), operator-(Dir)
+  /// operator+(Dir), operator-(Dir)
   c1 = Coordinate(0, 0);
   c2 = c1 + Dir(Compass::CENTER);
   assert(c2.x == 0 && c2.y == 0);
@@ -253,13 +253,13 @@ bool unitTestBasicTypes() {
   c2 = c1 - Dir(Compass::SW);
   assert(c2.x == 1 && c2.y == 1);
 
-  // raySameness()
+  /// raySameness()
   c1 = Coordinate{0, 0};
   c2 = Coordinate{10, 11};
   d1 = Compass::CENTER;
-  assert(c1.raySameness(c2) == 1.0);  // special case - zero vector
-  assert(c2.raySameness(c1) == 1.0);  // special case - zero vector
-  assert(c2.raySameness(d1) == 1.0);  // special case - zero vector
+  assert(c1.raySameness(c2) == 1.0);  ///< special case - zero vector
+  assert(c2.raySameness(c1) == 1.0);  ///< special case - zero vector
+  assert(c2.raySameness(d1) == 1.0);  ///< special case - zero vector
   c1 = c2;
   assert(c1.raySameness(c2) == 1.0);
   assert(areClosef(Coordinate(-10, -10).raySameness(Coordinate(10, 10)), -1.0));
@@ -273,8 +273,8 @@ bool unitTestBasicTypes() {
   c2 = Coordinate{113, -113};
   assert(areClosef(c1.raySameness(c2), -0.707106781));
 
-  // Polar
-  // ctor from mag, dir
+  /// Polar
+  /// ctor from mag, dir
   p1 = Polar();
   assert(p1.mag == 0 && p1.dir == Compass::CENTER);
   p1 = Polar(0, Compass::S);
@@ -284,14 +284,14 @@ bool unitTestBasicTypes() {
   p1 = Polar(-10, Compass::NW);
   assert(p1.mag == -10 && p1.dir == Compass::NW);
 
-  // .asCoord()
+  /// .asCoord()
   c1 = Polar(0, Compass::CENTER).asCoord();
   assert(c1.x == 0 && c1.y == 0);
   c1 = Polar(10, Compass::CENTER).asCoord();
   assert(c1.x == 0 && c1.y == 0);
   c1 = Polar(20, Compass::N).asCoord();
   assert(c1.x == 0 && c1.y == 20);
-  // c1 = Polar(12, Compass::W).asCoord();
+  /// c1 = Polar(12, Compass::W).asCoord();
   p1 = Polar(12, Compass::W);
   c1 = p1.asCoord();
   assert(c1.x == -12 && c1.y == 0);

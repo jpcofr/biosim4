@@ -1,7 +1,7 @@
-// test_basic_types.cpp
-// Google Test version of unitTestBasicTypes
-// This tests the types Dir, Coord, and Polar, and enum Compass.
-// See basicTypes.h for more info about the basic types.
+/// test_basic_types.cpp
+/// Google Test version of unitTestBasicTypes
+/// This tests the types Dir, Coord, and Polar, and enum Compass.
+/// See basicTypes.h for more info about the basic types.
 
 #include "basicTypes.h"
 
@@ -11,24 +11,24 @@
 
 using namespace BioSim;
 
-// Helper function to check floating point equality
+/// Helper function to check floating point equality
 bool areClosef(float a, float b) {
   return std::abs(a - b) < 0.0001;
 }
 
-// Test fixture for BasicTypes tests
+/// Test fixture for BasicTypes tests
 class BasicTypesTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Setup code if needed
+    /// Setup code if needed
   }
 
   void TearDown() override {
-    // Cleanup code if needed
+    /// Cleanup code if needed
   }
 };
 
-// Dir tests - Constructor and basic operations
+/// Dir tests - Constructor and basic operations
 TEST_F(BasicTypesTest, DirConstructorFromCompass) {
   Dir d1 = Dir(Compass::N);
   Dir d2 = Dir(Compass::CENTER);
@@ -167,7 +167,7 @@ TEST_F(BasicTypesTest, DirAsNormalizedPolar) {
   EXPECT_EQ(p1.dir, Compass::NE);
 }
 
-// Coordinate tests
+/// Coordinate tests
 TEST_F(BasicTypesTest, CoordConstructor) {
   Coordinate c1 = Coordinate();
   EXPECT_EQ(c1.x, 0);
@@ -267,10 +267,10 @@ TEST_F(BasicTypesTest, CoordLength) {
   EXPECT_EQ(Coordinate(0, 0).length(), 0);
   EXPECT_EQ(Coordinate(0, 1).length(), 1);
   EXPECT_EQ(Coordinate(-1, 0).length(), 1);
-  EXPECT_EQ(Coordinate(-1, -1).length(), 1);  // round down
+  EXPECT_EQ(Coordinate(-1, -1).length(), 1);  ///< round down
   EXPECT_EQ(Coordinate(22, 0).length(), 22);
-  EXPECT_EQ(Coordinate(22, 22).length(), 31);   // round down
-  EXPECT_EQ(Coordinate(10, -10).length(), 14);  // round down
+  EXPECT_EQ(Coordinate(22, 22).length(), 31);   ///< round down
+  EXPECT_EQ(Coordinate(10, -10).length(), 14);  ///< round down
   EXPECT_EQ(Coordinate(-310, 0).length(), 310);
 }
 
@@ -285,11 +285,11 @@ TEST_F(BasicTypesTest, CoordAsPolar) {
 
   p1 = Coordinate(-10, -10).asPolar();
   EXPECT_EQ(p1.mag, 14);
-  EXPECT_EQ(p1.dir, Compass::SW);  // round down mag
+  EXPECT_EQ(p1.dir, Compass::SW);  ///< round down mag
 
   p1 = Coordinate(100, 1).asPolar();
   EXPECT_EQ(p1.mag, 100);
-  EXPECT_EQ(p1.dir, Compass::E);  // round down mag
+  EXPECT_EQ(p1.dir, Compass::E);  ///< round down mag
 }
 
 TEST_F(BasicTypesTest, CoordAdditionSubtraction) {
@@ -360,9 +360,9 @@ TEST_F(BasicTypesTest, CoordRaySameness) {
   Coordinate c2 = Coordinate{10, 11};
   Dir d1 = Compass::CENTER;
 
-  EXPECT_FLOAT_EQ(c1.raySameness(c2), 1.0);  // special case - zero vector
-  EXPECT_FLOAT_EQ(c2.raySameness(c1), 1.0);  // special case - zero vector
-  EXPECT_FLOAT_EQ(c2.raySameness(d1), 1.0);  // special case - zero vector
+  EXPECT_FLOAT_EQ(c1.raySameness(c2), 1.0);  ///< special case - zero vector
+  EXPECT_FLOAT_EQ(c2.raySameness(c1), 1.0);  ///< special case - zero vector
+  EXPECT_FLOAT_EQ(c2.raySameness(d1), 1.0);  ///< special case - zero vector
 
   c1 = c2;
   EXPECT_FLOAT_EQ(c1.raySameness(c2), 1.0);
@@ -382,7 +382,7 @@ TEST_F(BasicTypesTest, CoordRaySameness) {
   EXPECT_TRUE(areClosef(c1.raySameness(c2), -0.707106781));
 }
 
-// Polar tests
+/// Polar tests
 TEST_F(BasicTypesTest, PolarConstructor) {
   Polar p1 = Polar();
   EXPECT_EQ(p1.mag, 0);
@@ -436,7 +436,7 @@ TEST_F(BasicTypesTest, PolarAsCoord) {
   EXPECT_EQ(c1.y, 0);
 }
 
-// Main function for running tests
+/// Main function for running tests
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

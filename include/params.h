@@ -36,28 +36,28 @@ extern RunMode runMode;
  * ParamManager::paramsSnapshot.
  */
 struct Params {
-  // Population and generation settings
+  /// Population and generation settings
   unsigned population;          ///< Population size (>= 0)
   unsigned stepsPerGeneration;  ///< Steps per generation (> 0)
   unsigned maxGenerations;      ///< Maximum generations to simulate (>= 0)
   unsigned numThreads;          ///< Number of parallel threads (> 0)
 
-  // Genome and neural network settings
+  /// Genome and neural network settings
   unsigned signalLayers;      ///< Number of pheromone layers (>= 0)
   unsigned genomeMaxLength;   ///< Maximum genome length (> 0)
   unsigned maxNumberNeurons;  ///< Maximum neurons per individual (> 0)
 
-  // Mutation settings
+  /// Mutation settings
   double pointMutationRate;          ///< Point mutation probability (0.0..1.0)
   double geneInsertionDeletionRate;  ///< Gene indel probability (0.0..1.0)
   double deletionRatio;              ///< Deletion vs insertion ratio (0.0..1.0)
 
-  // Reproduction settings
+  /// Reproduction settings
   bool killEnable;              ///< Enable survival selection
   bool sexualReproduction;      ///< Enable sexual reproduction
   bool chooseParentsByFitness;  ///< Select parents by fitness vs random
 
-  // Sensor settings
+  /// Sensor settings
   float populationSensorRadius;         ///< Radius for population sensing (> 0.0)
   unsigned signalSensorRadius;          ///< Radius for signal sensing (> 0)
   float responsiveness;                 ///< Agent responsiveness (>= 0.0)
@@ -66,29 +66,29 @@ struct Params {
   unsigned shortProbeBarrierDistance;   ///< Distance for barrier detection (> 0)
   float valenceSaturationMag;           ///< Signal saturation magnitude
 
-  // Video output settings
+  /// Video output settings
   bool saveVideo;                 ///< Enable video generation
   unsigned videoStride;           ///< Save every Nth generation (> 0)
   unsigned videoSaveFirstFrames;  ///< Always save first N generations (>= 0, overrides videoStride)
   unsigned displayScale;          ///< Pixel scale for output
   unsigned agentSize;             ///< Visual size of agents
 
-  // Analysis and logging settings
+  /// Analysis and logging settings
   unsigned genomeAnalysisStride;    ///< Genome analysis frequency (> 0)
   unsigned displaySampleGenomes;    ///< Number of sample genomes to display (>= 0)
   unsigned genomeComparisonMethod;  ///< 0 = Jaro-Winkler; 1 = Hamming
   bool updateGraphLog;              ///< Enable graph log updates
   unsigned updateGraphLogStride;    ///< Graph log update frequency (> 0)
 
-  // Challenge and environment settings
+  /// Challenge and environment settings
   unsigned challenge;    ///< Challenge type identifier
   unsigned barrierType;  ///< Barrier configuration (>= 0)
 
-  // Random number generation
+  /// Random number generation
   bool deterministic;  ///< Use deterministic RNG
   unsigned RNGSeed;    ///< Random number generator seed (>= 0)
 
-  // Grid dimensions (immutable after initialization)
+  /// Grid dimensions (immutable after initialization)
   uint16_t gridSize_X;                ///< Grid width (2..0x10000)
   uint16_t gridSize_Y;                ///< Grid height (2..0x10000)
   unsigned genomeInitialLengthMin;    ///< Min initial genome length (> 0, < genomeInitialLengthMax)
@@ -97,7 +97,7 @@ struct Params {
   std::string imageDir;               ///< Directory for image/video output
   std::string graphLogUpdateCommand;  ///< Command to update graph logs
 
-  // Automatic state tracking (not set via config file)
+  /// Automatic state tracking (not set via config file)
   unsigned parameterChangeGenerationNumber;  ///< Most recent generation with automatic parameter change
 };
 
@@ -110,6 +110,14 @@ struct Params {
  */
 class ParamManager {
  public:
+  /**
+   * @brief Construct manager with default parameters loaded.
+   *
+   * Ensures callers (including unit tests) see sensible values even if they
+   * never call setDefaults() explicitly.
+   */
+  ParamManager();
+
   /**
    * @brief Get read-only reference to current parameters
    * @return const reference to Params
@@ -164,4 +172,4 @@ Params paramsInit(int argc, char** argv);
 
 }  // namespace BioSim
 
-#endif  // BIOSIM4_INCLUDE_PARAMS_H_
+#endif  ///< BIOSIM4_INCLUDE_PARAMS_H_

@@ -1,4 +1,13 @@
-// analysis.cpp -- various reports
+/**
+ * @file analysis.cpp
+ * @brief Various reporting and analysis functions for simulation data
+ *
+ * Provides utilities for:
+ * - Converting sensor/action enums to human-readable strings
+ * - Printing genome and neural network information
+ * - Calculating population statistics
+ * - Generating epoch logs and reports
+ */
 
 #include "simulator.h"
 
@@ -11,7 +20,13 @@
 
 namespace BioSim {
 
-// This converts sensor numbers to descriptive strings.
+/**
+ * @brief Convert sensor enum to descriptive string
+ * @param sensor Sensor enum value
+ * @return Human-readable sensor name (e.g., "age", "population")
+ *
+ * Used for detailed output and logging.
+ */
 std::string sensorName(Sensor sensor) {
   switch (sensor) {
     case AGE:
@@ -83,7 +98,13 @@ std::string sensorName(Sensor sensor) {
   }
 }
 
-// Converts action numbers to descriptive strings.
+/**
+ * @brief Convert action enum to descriptive string
+ * @param action Action enum value
+ * @return Human-readable action name (e.g., "move east", "emit signal 0")
+ *
+ * Used for detailed output and logging.
+ */
 std::string actionName(Action action) {
   switch (action) {
     case MOVE_EAST:
@@ -143,8 +164,14 @@ std::string actionName(Action action) {
   }
 }
 
-// This converts sensor numbers to mnemonic strings.
-// Useful for later processing by graph-nnet.py.
+/**
+ * @brief Convert sensor enum to mnemonic string
+ * @param sensor Sensor enum value
+ * @return Short mnemonic (e.g., "Age", "Pop", "Lx")
+ *
+ * Useful for graph generation with tools/graph-nnet.py. Mnemonics are
+ * designed to be concise for visualization while remaining recognizable.
+ */
 std::string sensorShortName(Sensor sensor) {
   switch (sensor) {
     case AGE:
@@ -216,8 +243,14 @@ std::string sensorShortName(Sensor sensor) {
   }
 }
 
-// Converts action numbers to mnemonic strings.
-// Useful for later processing by graph-nnet.py.
+/**
+ * @brief Convert action enum to mnemonic string
+ * @param action Action enum value
+ * @return Short mnemonic (e.g., "MvE", "SG", "Mfd")
+ *
+ * Useful for graph generation with tools/graph-nnet.py. Mnemonics are
+ * designed to be concise for visualization while remaining recognizable.
+ */
 std::string actionShortName(Action action) {
   switch (action) {
     case MOVE_EAST:
@@ -277,9 +310,25 @@ std::string actionShortName(Action action) {
   }
 }
 
-// List the names of the active sensors and actions to stdout.
-// "Active" means those sensors and actions that are compiled into
-// the code. See sensors-actions.h for how to define the enums.
+/**
+ * @brief List all active sensors and actions to stdout
+ *
+ * Prints human-readable names of all sensors and actions that are compiled
+ * into the simulator. "Active" means those appearing before NUM_SENSES and
+ * NUM_ACTIONS markers in the enums. See sensors-actions.h for configuration.
+ *
+ * Output format:
+ * @code
+ * Sensors:
+ *   loc X
+ *   population
+ *   ...
+ * Actions:
+ *   move X
+ *   emit signal 0
+ *   ...
+ * @endcode
+ */
 void printSensorsActions() {
   unsigned i;
   std::cout << "Sensors:" << std::endl;
@@ -293,7 +342,20 @@ void printSensorsActions() {
   std::cout << std::endl;
 }
 
-// Format: 32-bit hex strings, one per gene
+/**
+ * @brief Print genome as hexadecimal gene sequences
+ *
+ * Outputs genome in format suitable for logging or re-parsing. Each gene
+ * is printed as an 8-character hexadecimal string with 8 genes per line.
+ *
+ * Example output:
+ * @code
+ * 8a3f42d1 c0214587 5f3e9012 ... (8 genes per line)
+ * a4f21038 ...
+ * @endcode
+ *
+ * @note Each gene is exactly 4 bytes (32 bits) as verified by assert
+ */
 void Individual::printGenome() const {
   constexpr unsigned genesPerLine = 8;
   unsigned count = 0;
@@ -314,78 +376,32 @@ void Individual::printGenome() const {
   std::cout << std::dec << std::endl;
 }
 
-///*
-// Example format:
-//
-//     ACTION_NAMEa from:
-//     ACTION_NAMEb from:
-//         SENSOR i
-//         SENSOR j
-//         NEURON n
-//         NEURON m
-//     Neuron x from:
-//         SENSOR i
-//         SENSOR j
-//         NEURON n
-//         NEURON m
-//     Neuron y ...
-//*/
-// void Indiv::printNeuralNet() const
-//{
-//     for (unsigned action = 0; action < Action::NUM_ACTIONS; ++action) {
-//         bool actionDisplayed = false;
-//         for (auto & conn : nnet.connections) {
-//
-//             assert((conn.sourceType == NEURON && conn.sourceNum <
-//             p.maxNumberNeurons)
-//                 || (conn.sourceType == SENSOR && conn.sourceNum <
-//                 Sensor::NUM_SENSES));
-//             assert((conn.sinkType == ACTION && conn.sinkNum <
-//             Action::NUM_ACTIONS)
-//                 || (conn.sinkType == NEURON && conn.sinkNum <
-//                 p.maxNumberNeurons));
-//
-//             if (conn.sinkType == ACTION && (conn.sinkNum) == action) {
-//                 if (!actionDisplayed) {
-//                     std::cout << "Action " << actionName((Action)action) << "
-//                     from:" << std::endl; actionDisplayed = true;
-//                 }
-//                 if (conn.sourceType == SENSOR) {
-//                     std::cout << "   " <<
-//                     sensorName((Sensor)(conn.sourceNum));
-//                 } else {
-//                     std::cout << "   Neuron " << (conn.sourceNum %
-//                     nnet.neurons.size());
-//                 }
-//                 std::cout << " " << conn.weightAsFloat() << std::endl;
-//             }
-//         }
-//     }
-//
-//     for (size_t neuronNum = 0; neuronNum < nnet.neurons.size(); ++neuronNum)
-//     {
-//         bool neuronDisplayed = false;
-//         for (auto & conn : nnet.connections) {
-//             if (conn.sinkType == NEURON && (conn.sinkNum) == neuronNum) {
-//                 if (!neuronDisplayed) {
-//                     std::cout << "Neuron " << neuronNum << " from:" <<
-//                     std::endl; neuronDisplayed = true;
-//                 }
-//                 if (conn.sourceType == SENSOR) {
-//                     std::cout << "   " <<
-//                     sensorName((Sensor)(conn.sourceNum));
-//                 } else {
-//                     std::cout << "   Neuron " << (conn.sourceNum);
-//                 }
-//                 std::cout << " " << conn.weightAsFloat() << std::endl;
-//             }
-//         }
-//     }
-// }
-//
-
-// This prints a neural net in a form that can be processed with
-// graph-nnet.py to produce a graphic illustration of the net.
+/**
+ * @brief Print neural network as edge list for graph visualization
+ *
+ * Outputs neural network connections in format compatible with
+ * tools/graph-nnet.py for graphical visualization. Each line represents
+ * one connection: source, sink, weight.
+ *
+ * Format:
+ * @code
+ * [SourceNode] [SinkNode] [Weight]
+ * @endcode
+ *
+ * Where:
+ * - Sensors: Short names (e.g., "Lx", "Pop", "Osc")
+ * - Neurons: "N" + number (e.g., "N0", "N5")
+ * - Actions: Short names (e.g., "MvE", "SG", "Mfd")
+ *
+ * Example output:
+ * @code
+ * Lx N0 1234
+ * Pop N0 -567
+ * N0 MvE 890
+ * @endcode
+ *
+ * @see tools/graph-nnet.py for visualization script
+ */
 void Individual::printIGraphEdgeList() const {
   for (auto& conn : nnet.connections) {
     if (conn.sourceType == SENSOR) {
@@ -406,6 +422,15 @@ void Individual::printIGraphEdgeList() const {
   }
 }
 
+/**
+ * @brief Calculate average genome length across population
+ * @return Average number of genes per genome
+ *
+ * Samples 100 random individuals from the population and computes the mean
+ * genome length. Used for tracking evolutionary trends.
+ *
+ * @note Samples from index range [1, population] (index 0 unused)
+ */
 float averageGenomeLength() {
   unsigned count = 100;
   unsigned numberSamples = 0;
@@ -418,9 +443,26 @@ float averageGenomeLength() {
   return sum / numberSamples;
 }
 
-// The epoch log contains one line per generation in a format that can be
-// fed to graphlog.gp to produce a chart of the simulation progress.
-// TODO remove hardcoded filename.
+/**
+ * @brief Append generation statistics to epoch log file
+ * @param generation Generation number (0-based)
+ * @param numberSurvivors Count of individuals passing survival challenge
+ * @param murderCount Number of individuals killed by others (if enabled)
+ *
+ * Writes one line per generation to `<logDir>/epoch-log.txt` in format:
+ * @code
+ * generation survivors diversity avg_genome_length murders
+ * @endcode
+ *
+ * On generation 0, creates/truncates the log file. Subsequent generations
+ * append. The output format is compatible with tools/graphlog.gp for
+ * plotting simulation progress.
+ *
+ * @note Uses hardcoded filename "epoch-log.txt" in configured log directory
+ * @see geneticDiversity() for diversity calculation
+ * @see averageGenomeLength() for genome length calculation
+ * @todo Remove hardcoded filename
+ */
 void appendEpochLog(unsigned generation, unsigned numberSurvivors, unsigned murderCount) {
   std::ofstream foutput;
 
@@ -439,7 +481,23 @@ void appendEpochLog(unsigned generation, unsigned numberSurvivors, unsigned murd
   }
 }
 
-// Print stats about pheromone usage.
+/**
+ * @brief Print pheromone usage statistics to stdout
+ *
+ * Calculates and displays:
+ * - Percentage of grid cells with non-zero signal
+ * - Average signal magnitude across entire grid
+ *
+ * Only runs if at least one signal sensor (SIGNAL0, SIGNAL0_FWD, or
+ * SIGNAL0_LR) is enabled. Scans all cells in pheromone layer 0.
+ *
+ * Output format:
+ * @code
+ * Signal spread X.XX%, average Y.YY
+ * @endcode
+ *
+ * @note Only examines layer 0 of pheromone system
+ */
 void displaySignalUse() {
   if (Sensor::SIGNAL0 > Sensor::NUM_SENSES && Sensor::SIGNAL0_FWD > Sensor::NUM_SENSES &&
       Sensor::SIGNAL0_LR > Sensor::NUM_SENSES) {
@@ -464,9 +522,29 @@ void displaySignalUse() {
             << std::endl;
 }
 
-// Print how many connections occur from each kind of sensor neuron and to
-// each kind of action neuron over the entire population. This helps us to
-// see which sensors and actions are most useful for survival.
+/**
+ * @brief Print usage statistics for sensors and actions across population
+ *
+ * Counts how many neural connections reference each sensor type and action
+ * type across all living individuals. Helps identify which sensors/actions
+ * are most useful for survival in the current challenge.
+ *
+ * Only scans living individuals and only counts enabled sensors/actions
+ * (those before NUM_SENSES and NUM_ACTIONS markers).
+ *
+ * Output format:
+ * @code
+ * Sensors in use:
+ *   count - sensor_name
+ *   ...
+ * Actions in use:
+ *   count - action_name
+ *   ...
+ * @endcode
+ *
+ * @note Useful for understanding which inputs and outputs the population
+ * has evolved to utilize
+ */
 void displaySensorActionReferenceCounts() {
   std::vector<unsigned> sensorCounts(Sensor::NUM_SENSES, 0);
   std::vector<unsigned> actionCounts(Action::NUM_ACTIONS, 0);
@@ -501,15 +579,41 @@ void displaySensorActionReferenceCounts() {
   }
 }
 
+/**
+ * @brief Display sample genomes and neural networks from population
+ * @param count Number of samples to display
+ *
+ * Prints detailed information for up to `count` living individuals:
+ * - Individual ID
+ * - Genome as hex strings (via printGenome())
+ * - Neural network as edge list (via printIGraphEdgeList())
+ *
+ * After displaying samples, calls displaySensorActionReferenceCounts() to
+ * show overall sensor/action usage statistics.
+ *
+ * Output format:
+ * @code
+ * ---------------------------
+ * Individual ID 42
+ * [genome hex dump]
+ * [neural net edge list]
+ * ---------------------------
+ * [repeat for other samples]
+ * [sensor/action usage stats]
+ * @endcode
+ *
+ * @note Only displays living individuals; iterates through population
+ * starting at index 1
+ */
 void displaySampleGenomes(unsigned count) {
-  unsigned index = 1;  // indexes start at 1
+  unsigned index = 1;  ///< indexes start at 1
   for (index = 1; count > 0 && index <= parameterMngrSingleton.population; ++index) {
     if (peeps[index].alive) {
       std::cout << "---------------------------\nIndividual ID " << index << std::endl;
       peeps[index].printGenome();
       std::cout << std::endl;
 
-      // peeps[index].printNeuralNet();
+      /// peeps[index].printNeuralNet();
       peeps[index].printIGraphEdgeList();
 
       std::cout << "---------------------------" << std::endl;
