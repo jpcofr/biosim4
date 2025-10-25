@@ -22,6 +22,8 @@ target_include_directories(biosim4_lib PUBLIC
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/src
   ${OpenCV_INCLUDE_DIRS}
+  ${toml11_SOURCE_DIR}
+  ${cli11_SOURCE_DIR}/include
 )
 
 # Link OpenCV to the library

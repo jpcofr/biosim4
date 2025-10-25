@@ -24,10 +24,21 @@ add_executable(biosim4 ${MyCppSources} ${MyCppheaders})
 target_include_directories(biosim4 PRIVATE
   ${CMAKE_SOURCE_DIR}/include
   ${OpenCV_INCLUDE_DIRS}
+  ${toml11_SOURCE_DIR}
+  ${cli11_SOURCE_DIR}/include
 )
 
 # Link libraries
-target_link_libraries(biosim4 PUBLIC ${OpenCV_LIBS})
+target_link_libraries(biosim4 PUBLIC
+  ${OpenCV_LIBS}
+  ${OpenMP_CXX_LIBRARIES}
+  toml11::toml11
+)
+
+# Explicitly link libc++ for toml11 support (fixes __hash_memory symbol issue)
+target_link_libraries(biosim4 PRIVATE
+  /opt/homebrew/Cellar/llvm/21.1.2/lib/c++/libc++.1.0.dylib
+)
 
 # Enable video generation if requested
 if(ENABLE_VIDEO_GENERATION)

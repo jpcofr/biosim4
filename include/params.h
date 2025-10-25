@@ -125,6 +125,15 @@ class ParamManager {
   const Params& getParamRef() const { return privParams; }
 
   /**
+   * @brief Set parameters directly (for ConfigManager integration)
+   * @param params Parameters to use
+   *
+   * Allows external configuration systems (like ConfigManager) to inject
+   * pre-configured parameters. This is a bridge method for modernization.
+   */
+  void setParams(const Params& params) { privParams = params; }
+
+  /**
    * @brief Initialize parameters with default values
    */
   void setDefaults();

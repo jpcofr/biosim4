@@ -1,0 +1,79 @@
+# BioSim4 Configuration File
+# Format: TOML (https://toml.io/)
+#
+# This file replaces the legacy biosim4.ini format with a more modern,
+# human-friendly configuration system.
+
+[simulation]
+# Grid dimensions (world size in cells)
+sizeX = 128
+sizeY = 128
+
+# Population parameters
+population = 3000
+stepsPerGeneration = 300
+maxGenerations = 100
+
+[genome]
+# Initial genome length range (in genes)
+genomeInitialLengthMin = 24
+genomeInitialLengthMax = 24
+
+# Maximum genome length after mutations
+genomeMaxLength = 300
+
+# Maximum number of internal neurons
+maxNumberNeurons = 5
+
+[video]
+# Video generation settings
+saveVideo = true
+
+# Save every Nth generation (1 = all, 5 = every 5th, etc.)
+videoStride = 1
+
+# Always save first N generations (overrides stride)
+videoSaveFirstFrames = 2
+
+# Display scale factor (pixels per grid cell)
+displayScale = 4
+
+[performance]
+# Number of threads for parallel simulation
+# 0 = use all available cores
+# 1 = single-threaded (useful for debugging)
+numThreads = 0
+
+[challenge]
+# Survival challenge type (see simulator.h for available challenges)
+# 0 = CHALLENGE_CIRCLE
+# 1 = CHALLENGE_RIGHT_HALF
+# 2 = CHALLENGE_RIGHT_QUARTER
+# etc.
+challenge = 0
+
+[analysis]
+# Genome analysis frequency (show sample genomes every N generations)
+genomeAnalysisStride = 10
+
+# Number of sample genomes to display
+displaySampleGenomes = 5
+
+[signals]
+# Number of pheromone layers
+signalLayers = 1
+
+# Signal fade rate (0.0 - 1.0)
+# Higher = faster fading
+# signalFadeRate = 0.01
+
+[mutations]
+# Mutation rates (0.0 - 1.0)
+# TODO: Add mutation parameters as they're implemented
+
+[barriers]
+# Barrier type for environment obstacles
+# 0 = None
+# 1 = Vertical bar
+# 2 = Five staggered bars
+barrierType = 0

@@ -253,11 +253,14 @@ void simulator(int argc, char** argv) {
   printSensorsActions();
 
   // Initialize parameter system with defaults, then load from config file
-  paramManager.setDefaults();
-  const char* configFile = argc > 1 ? argv[1] : "config/biosim4.ini";
-  paramManager.registerConfigFile(configFile);
-  paramManager.updateFromConfigFile(0);
-  paramManager.checkParameters();  // Validate and report configuration issues
+  // Skip initialization if argc==0 (params already set via setParams())
+  if (argc != 0) {
+    paramManager.setDefaults();
+    const char* configFile = argc > 1 ? argv[1] : "config/biosim4.ini";
+    paramManager.registerConfigFile(configFile);
+    paramManager.updateFromConfigFile(0);
+    paramManager.checkParameters();  // Validate and report configuration issues
+  }
 
   // Seed the global random number generator (per-thread instances seeded later)
   randomUint.initialize();
@@ -335,6 +338,28 @@ void simulator(int argc, char** argv) {
   displaySampleGenomes(3);
 
   std::cout << "Simulator exit." << std::endl;
+}
+
+/**
+ * @brief Modern simulator entry point accepting pre-configured Params
+ *
+ * This is a temporary bridge function that allows the new ConfigManager-based
+ * main.cpp to work with the legacy simulator code. The full integration
+ * (refactoring simulator() to use Params directly) will come later.
+ *
+ * @param params Pre-configured simulation parameters from ConfigManager
+ */
+void simulator(const Params& params) {
+  // Initialize the legacy ParamManager with the provided params
+  // Note: This is a bridge pattern - eventually simulator() should
+  // be refactored to accept Params directly without needing ParamManager
+  paramManager.setParams(params);
+
+  // Call the legacy simulator with special marker argc=0 to skip config loading
+  // argc=0 signals that params have already been initialized
+  int dummy_argc = 0;  // Special value: skip config file loading
+  char* dummy_argv[] = {(char*)"biosim4", nullptr};
+  simulator(dummy_argc, dummy_argv);
 }
 
 }  // namespace BioSim

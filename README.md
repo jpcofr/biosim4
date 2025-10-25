@@ -441,6 +441,146 @@ cd build/bin && ./biosim4
 ./build/bin/biosim4
 ```
 
+### Testing Video Generation
+
+The project includes built-in tools for testing and verifying video generation.
+
+#### Prerequisites
+
+Video generation requires **ffmpeg** to be installed:
+
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt-get install ffmpeg
+
+# Verify installation
+ffmpeg -version
+```
+
+#### Quick Video Test
+
+Use the built-in `video-test` preset for a fast test (generates 5 videos):
+
+```bash
+# Run video test (takes ~30 seconds)
+./build/bin/biosim4 --preset video-test
+
+# Verify videos were created
+ls -lh output/images/*.avi
+```
+
+**Expected output**: 5 video files named `gen-000000.avi` through `gen-000004.avi`
+
+#### Automated Video Verification
+
+The simulator includes a built-in video verification tool:
+
+```bash
+# Run test and verify automatically
+./build/bin/biosim4 --preset video-test
+./build/bin/biosim4 --verify-videos
+
+# Or use the test script (cleans old videos, runs test, verifies)
+./scripts/test-video.sh
+```
+
+The verification tool checks:
+- ✅ All expected videos were generated
+- ✅ File sizes are reasonable (detects corrupt/empty files)
+- ✅ Generation numbering is correct
+- ✅ No missing generations
+
+#### Interactive Video Review
+
+Preview generated videos directly from the command line:
+
+```bash
+# Launch interactive review mode
+./build/bin/biosim4 --review-videos
+
+# The tool will display:
+# - List of all videos with file sizes
+# - Options to open individual videos or all at once
+# - Automatic detection of your system's video player
+```
+
+Example output:
+```
+╔══════════════════════════════════════════╗
+║     Interactive Video Review             ║
+╚══════════════════════════════════════════╝
+
+Found 5 video(s)
+
+[1] Generation 0 - gen-000000.avi (2.34 MB)
+[2] Generation 1 - gen-000001.avi (2.31 MB)
+[3] Generation 2 - gen-000002.avi (2.29 MB)
+[4] Generation 3 - gen-000003.avi (2.33 MB)
+[5] Generation 4 - gen-000004.avi (2.35 MB)
+
+Commands:
+  1-5  : Open video in player
+  a    : Open all videos
+  q    : Quit
+```
+
+#### Available Test Presets
+
+The simulator includes several built-in presets (no config file needed):
+
+```bash
+# List all available presets
+./build/bin/biosim4 --list-presets
+
+# Common presets:
+./build/bin/biosim4 --preset quick         # Fast test, no video (10 gen, ~10 sec)
+./build/bin/biosim4 --preset video-test    # Video test (5 gen, ~30 sec)
+./build/bin/biosim4 --preset demo          # Demo mode with video (moderate run)
+./build/bin/biosim4 --preset benchmark     # Performance test (large population)
+```
+
+#### Manual Testing
+
+For custom testing, override individual parameters:
+
+```bash
+# Quick test with video enabled
+./build/bin/biosim4 --preset quick --set saveVideo=true
+
+# Test with small population and 10 generations
+./build/bin/biosim4 --set population=500 --set maxGenerations=10 --set saveVideo=true
+
+# View current configuration without running
+./build/bin/biosim4 --preset video-test --show-config
+```
+
+#### Troubleshooting Video Generation
+
+**Problem: Videos not being created**
+```bash
+# Check if ffmpeg is installed
+which ffmpeg
+
+# Check if output directory exists
+mkdir -p output/images output/logs
+
+# Verify video is enabled in config
+./build/bin/biosim4 --show-config | grep -i video
+```
+
+**Problem: "Unable to initialize video writer" error**
+- Ensure ffmpeg is installed and in your PATH
+- Check that output/images/ directory has write permissions
+- Try a different video codec (edit config: set codec to MJPEG or H264)
+
+**Problem: Empty or corrupt video files**
+- Check available disk space
+- Ensure the simulation ran long enough (at least 1 generation complete)
+- Check terminal output for encoding errors
+
 ### Configuration
 
 The simulator reads parameters from `config/biosim4.ini` by default (or `biosim4.ini` in the root directory for backwards compatibility). You can also specify a different config file: Key parameters include:

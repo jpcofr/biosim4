@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 4.1.2)
 project(BioSim4 VERSION 0.2.0)
 
+# C++ standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Set default parallel build level if not already set
 if(NOT CMAKE_BUILD_PARALLEL_LEVEL)
     include(ProcessorCount)
@@ -30,11 +35,27 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 
+# Fetch toml11 for modern TOML configuration parsing
+FetchContent_Declare(
+  toml11
+  GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
+  GIT_TAG v3.8.1
+  GIT_SHALLOW TRUE
+)
+
+# Fetch CLI11 for command-line parsing
+FetchContent_Declare(
+  cli11
+  GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+  GIT_TAG v2.4.1
+  GIT_SHALLOW TRUE
+)
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-# Make Google Test available
-FetchContent_MakeAvailable(googletest)
+# Make dependencies available
+FetchContent_MakeAvailable(googletest toml11 cli11)
 
 set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
 set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")

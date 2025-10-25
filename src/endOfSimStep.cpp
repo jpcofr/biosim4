@@ -180,6 +180,34 @@ void endOfSimulationStep(unsigned simStep, unsigned generation) {
   pheromones.fade(0);  // Layer number parameter (TODO: make configurable)
 
   // ============================================================================
+  // Deferred Operation Processing
+  // ============================================================================
+  /**
+   * Process queued operations that were deferred during parallel individual
+   * processing to avoid race conditions:
+   *
+   * 1. Death Queue: Removes individuals marked for death (from actions,
+   *    challenges, or collisions). Updates grid and frees peep indices.
+   *
+   * 2. Movement Queue: Applies position changes that were validated but
+   *    deferred. Updates both individual locations and grid occupancy.
+   *
+   * These queues enable thread-safe individual processing in the main step loop.
+   */
+  peeps.drainDeathQueue();
+  peeps.drainMoveQueue();
+
+  // ============================================================================
+  // Environment Updates
+  // ============================================================================
+  /**
+   * Fade pheromone signals to simulate natural decay over time.
+   * Layer 0 is the default pheromone layer (TODO: support multiple layers).
+   * Fade rate is controlled by signalSensorRadius parameter.
+   */
+  pheromones.fade(0);  ///< takes layerNum  TODO!!!
+
+  // ============================================================================
   // Video Frame Capture
   // ============================================================================
   /**
@@ -192,18 +220,6 @@ void endOfSimulationStep(unsigned simStep, unsigned generation) {
    * Uses synchronous frame capture to avoid threading issues.
    * Frames are buffered and converted to video at generation end.
    */
-  if (parameterMngrSingleton.saveVideo && ((generation % parameterMngrSingleton.videoStride) == 0 ||
-                                           generation <= parameterMngrSingleton.videoSaveFirstFrames ||
-                                           (generation >= parameterMngrSingleton.parameterChangeGenerationNumber &&
-                                            generation <= parameterMngrSingleton.parameterChangeGenerationNumber +
-                                                              parameterMngrSingleton.videoSaveFirstFrames))) {
-  }
-
-  peeps.drainDeathQueue();
-  peeps.drainMoveQueue();
-  pheromones.fade(0);  ///< takes layerNum  TODO!!!
-
-  /// saveVideoFrameSync() is the synchronous version of saveVideFrame()
   if (parameterMngrSingleton.saveVideo && ((generation % parameterMngrSingleton.videoStride) == 0 ||
                                            generation <= parameterMngrSingleton.videoSaveFirstFrames ||
                                            (generation >= parameterMngrSingleton.parameterChangeGenerationNumber &&

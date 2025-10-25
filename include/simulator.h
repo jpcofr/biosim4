@@ -100,6 +100,15 @@ extern Peeps peeps;
 extern void simulator(int argc, char** argv);
 
 /**
+ * @brief Modern simulator entry point (new config system)
+ * @param params Pre-configured simulation parameters
+ *
+ * Overload that accepts directly configured Params struct from ConfigManager.
+ * This is the modern interface - the argc/argv version is legacy.
+ */
+extern void simulator(const Params& params);
+
+/**
  * @brief Visit all coordinates within circular radius
  * @param loc Center coordinate
  * @param radius Search radius (grid units)
