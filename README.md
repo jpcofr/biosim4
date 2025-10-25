@@ -64,6 +64,13 @@ Document Contents
   - [Execution](#execution)
     - [Running the Simulator](#running-the-simulator)
       - [With CMake Build (Recommended)](#with-cmake-build-recommended)
+    - [Testing Video Generation](#testing-video-generation)
+      - [Prerequisites](#prerequisites)
+      - [Quick Video Test](#quick-video-test)
+      - [Automated Video Verification](#automated-video-verification)
+      - [Interactive Video Review](#interactive-video-review)
+      - [Available Test Presets](#available-test-presets)
+      - [Manual Testing](#manual-testing)
     - [Configuration](#configuration)
     - [Stopping the Simulator](#stopping-the-simulator)
   - [Tools directory](#tools-directory)
@@ -447,17 +454,13 @@ The project includes built-in tools for testing and verifying video generation.
 
 #### Prerequisites
 
-Video generation requires **ffmpeg** to be installed:
+Video generation is **fully self-contained** - no external tools required! The simulator uses embedded FFmpeg libraries (libavcodec, libavformat) for professional H.264 video encoding.
+
+**Build Dependencies** (one-time setup):
 
 ```bash
 # macOS
-brew install ffmpeg
-
-# Ubuntu/Debian
-sudo apt-get install ffmpeg
-
-# Verify installation
-ffmpeg -version
+brew install ffmpeg  # Provides FFmpeg development libraries
 ```
 
 #### Quick Video Test
@@ -557,29 +560,6 @@ For custom testing, override individual parameters:
 ./build/bin/biosim4 --preset video-test --show-config
 ```
 
-#### Troubleshooting Video Generation
-
-**Problem: Videos not being created**
-```bash
-# Check if ffmpeg is installed
-which ffmpeg
-
-# Check if output directory exists
-mkdir -p output/images output/logs
-
-# Verify video is enabled in config
-./build/bin/biosim4 --show-config | grep -i video
-```
-
-**Problem: "Unable to initialize video writer" error**
-- Ensure ffmpeg is installed and in your PATH
-- Check that output/images/ directory has write permissions
-- Try a different video codec (edit config: set codec to MJPEG or H264)
-
-**Problem: Empty or corrupt video files**
-- Check available disk space
-- Ensure the simulation ran long enough (at least 1 generation complete)
-- Check terminal output for encoding errors
 
 ### Configuration
 

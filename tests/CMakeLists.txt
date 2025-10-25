@@ -21,17 +21,21 @@ add_library(biosim4_lib STATIC ${BIOSIM_LIB_SOURCES})
 target_include_directories(biosim4_lib PUBLIC
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/src
-  ${OpenCV_INCLUDE_DIRS}
   ${cli11_SOURCE_DIR}/include
 )
 
-# Suppress warnings coming from toml11 only
+# Suppress warnings coming from toml11, raylib, and FFmpeg
 target_include_directories(biosim4_lib SYSTEM PUBLIC
   ${toml11_SOURCE_DIR}
+  ${raylib_SOURCE_DIR}/src
+  ${FFMPEG_INCLUDE_DIRS}
 )
 
-# Link OpenCV to the library
-target_link_libraries(biosim4_lib PUBLIC ${OpenCV_LIBS})
+# Link directories for FFmpeg
+target_link_directories(biosim4_lib PUBLIC ${FFMPEG_LIBRARY_DIRS})
+
+# Link raylib and FFmpeg to the library
+target_link_libraries(biosim4_lib PUBLIC raylib ${FFMPEG_LIBRARIES})
 
 # Apply the same compilation and linking flags as the main executable
 target_compile_options(biosim4_lib PRIVATE -O3 -Wall -fexceptions -fopenmp)

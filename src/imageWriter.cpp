@@ -3,52 +3,41 @@
  * @brief Implementation of video frame generation and encoding for simulation visualization
  *
  * This file implements the ImageWriter class which captures simulation state as video frames
- * and assembles them into AVI movies. It uses CImg library with OpenCV backend for image
- * manipulation and video encoding. The implementation supports both synchronous (blocking)
- * and asynchronous (threaded) frame saving modes, though async mode is currently disabled
- * due to threading issues (see IMAGEWRITER_INTEGRATION_GUIDE.md).
+ * and assembles them into AVI movies. It uses the IRenderBackend abstraction to remain
+ * independent of specific graphics libraries (currently raylib, previously CImg/OpenCV).
  *
  * @note Video generation can be disabled via config parameter saveVideo=false
- * @note Output format is AVI with H264 codec (fallback to MJPEG if H264 unavailable)
+ * @note Output format is AVI with H264 codec (implementation-specific)
  */
 
 #include "imageWriter.h"
+
+#include "renderBackend.h"
+#include "simulator.h"
 
 #include <chrono>
 #include <condition_variable>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <sstream>
 #include <thread>
 
-/// Enable OpenCV support in CImg for video encoding
-#define cimg_use_opencv 1
-#define cimg_display 0
-#include "CImg.h"
-#include "simulator.h"
-
 namespace BioSim {
 
-/**
- * @brief Global buffer accumulating video frames for the current generation
- *
- * This CImg list holds all rendered frames for the current generation. At generation end,
- * the entire list is encoded into a single video file via saveGenerationVideo().
- * Memory is cleared at the start of each new generation via startNewGeneration().
- */
-cimg_library::CImgList<uint8_t> imageList;
+// Global render backend instance (owned by imageWriter)
+static std::unique_ptr<IRenderBackend> renderBackend = nullptr;
 
 /**
- * @brief Renders a single simulation frame and appends it to the global imageList
+ * @brief Renders a single simulation frame using the render backend abstraction
  *
  * This is the core rendering function that converts simulation state (individual locations,
  * pheromone trails, barriers, challenge zones) into a visual image frame. The frame is
- * constructed as a white background canvas with overlaid colored elements representing
- * different simulation aspects.
+ * constructed by calling methods on the render backend interface.
  *
  * Rendering layers (back to front):
- * 1. White background (255,255,255)
+ * 1. White background (created by beginFrame())
  * 2. Challenge zone indicators (green circle or yellow wall)
  * 3. Pheromone trail layer 0 (blue, alpha-blended)
  * 4. "Recent death" pheromone layer 1 (red, alpha-blended)
@@ -62,141 +51,84 @@ cimg_library::CImgList<uint8_t> imageList;
  * @note Frame resolution is gridSize * displayScale pixels per dimension
  * @note Agent colors are deterministically generated from genome via makeGeneticColor()
  * @note Pheromone alpha values are scaled to prevent over-saturation (max 0.33 for layer 0)
- * @note The rendered frame is pushed to imageList, NOT saved to disk directly
+ * @note The rendered frame is buffered by the backend for later video encoding
  *
  * @see makeGeneticColor() for color generation algorithm
  * @see ImageFrameData for data structure definition
- * @see saveGenerationVideo() for video encoding from imageList
+ * @see IRenderBackend for rendering interface details
  */
 void saveOneFrameImmed(const ImageFrameData& data) {
-  using namespace cimg_library;
+  if (!renderBackend) {
+    std::cerr << "Error: Render backend not initialized!" << std::endl;
+    return;
+  }
 
-  CImg<uint8_t> image(parameterMngrSingleton.gridSize_X * parameterMngrSingleton.displayScale,
-                      parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale,
-                      1,     ///< Z depth
-                      3,     ///< color channels
-                      255);  ///< initial value
-  uint8_t color[3];
-  uint8_t temp;
-  float alpha = 1.0;
-  uint16_t offset;
-  std::stringstream imageFilename;
-  imageFilename << parameterMngrSingleton.imageDir << "/frame-" << std::setfill('0') << std::setw(6) << data.generation
-                << '-' << std::setfill('0') << std::setw(6) << data.simStep << ".png";
+  // Begin new frame (creates white canvas)
+  renderBackend->beginFrame(data.simStep, data.generation);
 
-  /// Draw save and/or unsafe area(s)
+  // Convert challenge enum to zone type
+  ChallengeZoneType zoneType = ChallengeZoneType::NONE;
   switch (data.challenge) {
     case CHALLENGE_CENTER_WEIGHTED:
-      color[0] = 0xa0;
-      color[1] = 0xff;
-      color[2] = 0xa0;
-      image.draw_circle((parameterMngrSingleton.gridSize_X * parameterMngrSingleton.displayScale) / 2,
-                        (parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale) / 2,
-                        (parameterMngrSingleton.gridSize_Y / 3.0 * parameterMngrSingleton.displayScale),
-                        color,  ///< rgb
-                        1.0);   ///< alpha
-
+      zoneType = ChallengeZoneType::CENTER_WEIGHTED;
       break;
     case CHALLENGE_CENTER_UNWEIGHTED:
-      color[0] = 0xa0;
-      color[1] = 0xff;
-      color[2] = 0xa0;
-      image.draw_circle((parameterMngrSingleton.gridSize_X * parameterMngrSingleton.displayScale) / 2,
-                        (parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale) / 2,
-                        (parameterMngrSingleton.gridSize_Y / 3.0 * parameterMngrSingleton.displayScale),
-                        color,  ///< rgb
-                        1.0);   ///< alpha
-
+      zoneType = ChallengeZoneType::CENTER_UNWEIGHTED;
       break;
     case CHALLENGE_RADIOACTIVE_WALLS:
-      color[0] = 0xff;
-      color[1] = 0xff;
-      color[2] = 0xa0;
-      offset = 0;
-      if (data.simStep >= parameterMngrSingleton.stepsPerGeneration / 2) {
-        offset = parameterMngrSingleton.gridSize_X - 5;
-      }
-      image.draw_rectangle(offset * parameterMngrSingleton.displayScale, 0,
-                           (offset + 5) * parameterMngrSingleton.displayScale,
-                           parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale,
-                           color,  ///< rgb
-                           1.0);   ///< alpha
-
+      zoneType = ChallengeZoneType::RADIOACTIVE_WALLS;
       break;
-
     default:
+      zoneType = ChallengeZoneType::NONE;
       break;
   }
 
-  /// Draw standard pheromone trails (signal layer 0)
+  // Draw challenge zones
+  renderBackend->drawChallengeZone(zoneType, data.simStep, parameterMngrSingleton.stepsPerGeneration);
+
+  // Draw standard pheromone trails (signal layer 0) - blue with alpha
   if (data.signalLayers.size() > 0) {
-    color[0] = 0x00;
-    color[1] = 0x00;
-    color[2] = 0xff;
     for (int16_t x = 0; x < parameterMngrSingleton.gridSize_X; ++x) {
       for (int16_t y = 0; y < parameterMngrSingleton.gridSize_Y; ++y) {
-        temp = data.signalLayers[0][x][y];
-        if (temp > 0) {
-          alpha = ((float)temp / 255.0) / 3.0;
-          /// max alpha 0.33
-          if (alpha > 0.33) {
-            alpha = 0.33;
+        uint8_t intensity = data.signalLayers[0][x][y];
+        if (intensity > 0) {
+          // Blue pheromone with alpha based on intensity (max 0.33)
+          float alpha = (static_cast<float>(intensity) / 255.0f) / 3.0f;
+          if (alpha > 0.33f) {
+            alpha = 0.33f;
           }
+          uint8_t alphaVal = static_cast<uint8_t>(alpha * 255.0f);
 
-          image.draw_rectangle(
-              ((x - 1) * parameterMngrSingleton.displayScale) + 1,
-              (((parameterMngrSingleton.gridSize_Y - y) - 2)) * parameterMngrSingleton.displayScale + 1,
-              (x + 1) * parameterMngrSingleton.displayScale,
-              ((parameterMngrSingleton.gridSize_Y - (y - 0))) * parameterMngrSingleton.displayScale,
-              color,   ///< rgb
-              alpha);  ///< alpha
+          // Draw rectangle for pheromone cell
+          renderBackend->drawRectangle(x - 1, y - 1, x + 1, y + 1, Color(0x00, 0x00, 0xff, alphaVal));
         }
       }
     }
   }
 
-  /// Draw "recent death" alarm pheromone (signal layer 1)
-  /// We need to scale it up a bit, otherwise it often displays much too faint
+  // Draw "recent death" pheromone layer (layer 1) - red with alpha
   if (data.signalLayers.size() > 1) {
-    color[0] = 0xff;
-    color[1] = 0x00;
-    color[2] = 0x00;
     for (int16_t x = 0; x < parameterMngrSingleton.gridSize_X; ++x) {
       for (int16_t y = 0; y < parameterMngrSingleton.gridSize_Y; ++y) {
-        temp = data.signalLayers[1][x][y];
-        if (temp > 0) {
-          alpha = ((float)temp / 255.0) * 5;
-          /// max alpha 0.5
-          if (alpha > 0.5) {
-            alpha = 0.5;
-          }
+        uint8_t intensity = data.signalLayers[1][x][y];
+        if (intensity > 0) {
+          // Red death marker with alpha
+          float alpha = static_cast<float>(intensity) / 255.0f;
+          uint8_t alphaVal = static_cast<uint8_t>(alpha * 255.0f);
 
-          image.draw_rectangle(
-              ((x - 1) * parameterMngrSingleton.displayScale) + 1,
-              (((parameterMngrSingleton.gridSize_Y - y) - 2)) * parameterMngrSingleton.displayScale + 1,
-              (x + 1) * parameterMngrSingleton.displayScale,
-              ((parameterMngrSingleton.gridSize_Y - (y - 0))) * parameterMngrSingleton.displayScale,
-              color,   ///< rgb
-              alpha);  ///< alpha
+          renderBackend->drawRectangle(x - 1, y - 1, x + 1, y + 1, Color(0xff, 0x00, 0x00, alphaVal));
         }
       }
     }
   }
 
-  /// Draw barrier locations
-  color[0] = color[1] = color[2] = 0x88;
-  for (Coordinate loc : data.barrierLocs) {
-    image.draw_rectangle(loc.x * parameterMngrSingleton.displayScale - (parameterMngrSingleton.displayScale / 2),
-                         ((parameterMngrSingleton.gridSize_Y - loc.y) - 1) * parameterMngrSingleton.displayScale -
-                             (parameterMngrSingleton.displayScale / 2),
-                         (loc.x + 1) * parameterMngrSingleton.displayScale,
-                         ((parameterMngrSingleton.gridSize_Y - (loc.y - 0))) * parameterMngrSingleton.displayScale,
-                         color,  ///< rgb
-                         1.0);   ///< alpha
+  // Draw barriers as gray rectangles
+  Color barrierColor(0x88, 0x88, 0x88, 0xff);  // Gray
+  for (const auto& loc : data.barrierLocs) {
+    renderBackend->drawRectangle(loc.x, loc.y, loc.x + 1, loc.y + 1, barrierColor);
   }
 
-  /// Draw agents
-
+  // Draw individuals as colored circles
   constexpr uint8_t maxColorVal = 0xb0;
   constexpr uint8_t maxLumaVal = 0xb0;
 
@@ -204,33 +136,26 @@ void saveOneFrameImmed(const ImageFrameData& data) {
 
   for (size_t i = 0; i < data.indivLocs.size(); ++i) {
     int c = data.indivColors[i];
-    color[0] = (c);                ///< R: 0..255
-    color[1] = ((c & 0x1f) << 3);  ///< G: 0..255
-    color[2] = ((c & 7) << 5);     ///< B: 0..255
+    uint8_t r = static_cast<uint8_t>(c);                // R: 0..255
+    uint8_t g = static_cast<uint8_t>((c & 0x1f) << 3);  // G: 0..255
+    uint8_t b = static_cast<uint8_t>((c & 7) << 5);     // B: 0..255
 
-    /// Prevent color mappings to very bright colors (hard to see):
-    if (rgbToLuma(color[0], color[1], color[2]) > maxLumaVal) {
-      if (color[0] > maxColorVal)
-        color[0] %= maxColorVal;
-      if (color[1] > maxColorVal)
-        color[1] %= maxColorVal;
-      if (color[2] > maxColorVal)
-        color[2] %= maxColorVal;
+    // Prevent color mappings to very bright colors (hard to see):
+    if (rgbToLuma(r, g, b) > maxLumaVal) {
+      if (r > maxColorVal)
+        r %= maxColorVal;
+      if (g > maxColorVal)
+        g %= maxColorVal;
+      if (b > maxColorVal)
+        b %= maxColorVal;
     }
 
-    image.draw_circle(
-        data.indivLocs[i].x * parameterMngrSingleton.displayScale,
-        ((parameterMngrSingleton.gridSize_Y - data.indivLocs[i].y) - 1) * parameterMngrSingleton.displayScale,
-        parameterMngrSingleton.agentSize,
-        color,  ///< rgb
-        1.0);   ///< alpha
+    renderBackend->drawCircle(data.indivLocs[i].x, data.indivLocs[i].y, parameterMngrSingleton.agentSize,
+                              Color(r, g, b, 255));
   }
 
-  /// Save as PNG file
-  /// image.save_png(imageFilename.str().c_str(), 3);
-  imageList.push_back(image);
-
-  /// CImgDisplay local(image, "biosim3");
+  // Finalize frame (adds to backend's frame buffer)
+  renderBackend->endFrame();
 }
 
 /**
@@ -247,11 +172,11 @@ ImageWriter::ImageWriter() : droppedFrameCount{0}, busy{true}, dataReady{false},
 /**
  * @brief Initializes the ImageWriter with grid dimensions and signal layer count
  *
- * Prepares the image writer for a new simulation run by clearing any previous state.
- * The signal layers are dynamically allocated per-frame based on the pheromone data
- * structure, so no pre-allocation is required here.
+ * Prepares the image writer for a new simulation run by creating the render backend
+ * and initializing it with the simulation parameters.
  *
- * @param layers Number of pheromone signal layers (typically 2: standard trails + death alarm)
+ * @param layers Number of pheromone signal layers (typically 2: standard trails + death alarm) - unused, kept for API
+ * compatibility
  * @param sizeX Grid width in cells
  * @param sizeY Grid height in cells
  *
@@ -259,22 +184,31 @@ ImageWriter::ImageWriter() : droppedFrameCount{0}, busy{true}, dataReady{false},
  * @note Parameters are stored globally in parameterMngrSingleton, not cached locally
  */
 void ImageWriter::init(uint16_t layers, uint16_t sizeX, uint16_t sizeY) {
-  /// No initialization needed for vector-based signalLayers
+  (void)layers;  // Unused parameter, kept for API compatibility
+  // Create and initialize the render backend
+  renderBackend = createDefaultRenderBackend();
+  if (renderBackend) {
+    renderBackend->init(sizeX, sizeY, parameterMngrSingleton.displayScale, parameterMngrSingleton.agentSize);
+  } else {
+    std::cerr << "Error: Failed to create render backend!" << std::endl;
+  }
   startNewGeneration();
 }
 
 /**
  * @brief Resets frame accumulator for a new generation's video output
  *
- * Clears the imageList buffer and resets the skipped frame counter. This must be called
- * before capturing frames for a new generation to prevent mixing frames from different
- * generations in the same video file.
+ * Clears the render backend's frame buffer and resets the skipped frame counter.
+ * This must be called before capturing frames for a new generation to prevent
+ * mixing frames from different generations in the same video file.
  *
  * @note Called automatically by init() and after saveGenerationVideo() completes
  * @note Does NOT clear droppedFrameCount (tracks drops across all generations)
  */
 void ImageWriter::startNewGeneration() {
-  imageList.clear();
+  if (renderBackend) {
+    renderBackend->startNewGeneration();
+  }
   skippedFrames = 0;
 }
 
@@ -473,68 +407,55 @@ bool ImageWriter::saveVideoFrameSync(unsigned simStep, unsigned generation, unsi
  * @brief Encodes accumulated frames into an AVI video file for the completed generation
  *
  * This method is called at the end of each generation (after survival selection) to
- * compile all captured frames from imageList into a single video file. The encoding
- * process uses CImg's OpenCV backend with H264 codec (fallback to MJPEG if unavailable).
+ * compile all captured frames into a single video file using the render backend's
+ * video encoding capabilities.
  *
- * Video properties:
+ * Video properties (backend-specific):
  * - Format: AVI container
- * - Codec: H264 (preferred) or MJPEG (fallback)
- * - Frame rate: 25 FPS (hardcoded)
+ * - Codec: H264 (preferred) or backend-specific fallback
+ * - Frame rate: 25 FPS (typical)
  * - Resolution: gridSize * displayScale pixels
  * - Filename: output/images/gen-NNNNNN.avi (6-digit zero-padded generation number)
  *
  * Encoding flow:
- * 1. Construct filename with generation number padding
- * 2. Attempt H264 encoding (most space-efficient)
- * 3. If H264 fails, retry with MJPEG codec
- * 4. Report success/failure and skipped frame count to stdout
- * 5. Clear imageList and reset counters via startNewGeneration()
+ * 1. Delegate to renderBackend->saveVideo() for encoding
+ * 2. Report success/failure to stdout
+ * 3. Clear frame buffer via startNewGeneration()
  *
  * @param generation Generation number for filename construction (0 to numGenerations-1)
  *
- * @note Encoding time scales with frame count (typically 1-10 seconds for 500 frames)
- * @note OpenCV threading is limited to 2 threads to prevent resource contention
- * @note Empty imageList is silently skipped (occurs when saveVideo=false or videoStride)
- * @note Errors are logged to stderr but do not abort the simulation
+ * @note Encoding time varies by backend and frame count
+ * @note Empty frame buffer is handled gracefully by backend
+ * @note Errors are logged but do not abort the simulation
  *
  * @warning Blocking operation - simulation pauses during video encoding
- * @warning H264 requires ffmpeg/x264 libraries at runtime (may fail on some systems)
  *
  * @see startNewGeneration() for cleanup after encoding completes
  * @see endOfGeneration() in simulator.cpp for the call site
  * @see config/biosim4.ini parameters: saveVideo, videoStride, videoSaveFirstFrames
- *
- * @todo Move encoding to separate thread to avoid blocking simulation (see TODO comment)
  */
 void ImageWriter::saveGenerationVideo(unsigned generation) {
-  if (imageList.size() > 0) {
-    std::stringstream videoFilename;
+  if (!renderBackend) {
+    std::cerr << "Error: Render backend not initialized!" << std::endl;
+    return;
+  }
+
+  size_t frameCount = renderBackend->getFrameCount();
+  if (frameCount > 0) {
     std::string imgDir = parameterMngrSingleton.imageDir;
-    /// Add trailing slash if not present
+    // Add trailing slash if not present
     if (!imgDir.empty() && imgDir.back() != '/') {
       imgDir += '/';
     }
-    videoFilename << imgDir << "gen-" << std::setfill('0') << std::setw(6) << generation << ".avi";
 
-    std::cout << "Saving " << imageList.size() << " frames to " << videoFilename.str() << std::endl;
+    std::cout << "Encoding " << frameCount << " frames for generation " << generation << std::endl;
 
-    try {
-      cv::setNumThreads(2);
-      imageList.save_video(videoFilename.str().c_str(), 25, "H264");
+    bool success = renderBackend->saveVideo(generation, imgDir);
+
+    if (success) {
       std::cout << "Video saved successfully" << std::endl;
-    } catch (const std::exception& e) {
-      std::cerr << "Error saving video with H264: " << e.what() << std::endl;
-      std::cerr << "Trying MJPEG codec..." << std::endl;
-      try {
-        imageList.save_video(videoFilename.str().c_str(), 25, "MJPG");
-        std::cout << "Video saved with MJPEG codec" << std::endl;
-      } catch (const std::exception& e2) {
-        std::cerr << "Video encoding failed: " << e2.what() << std::endl;
-      }
-    }
-
-    if (skippedFrames > 0) {
-      std::cout << "Video skipped " << skippedFrames << " frames" << std::endl;
+    } else {
+      std::cerr << "Error: Failed to save video for generation " << generation << std::endl;
     }
   }
   startNewGeneration();

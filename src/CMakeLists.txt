@@ -1,8 +1,8 @@
 
 FILE(GLOB MyCppSources ./*.cpp)
-# Only include implementation-specific headers (CImg.h, imageWriter.h) from src/
+# Only include implementation-specific headers from src/
 # All other headers are now in ../include/
-FILE(GLOB MyCppheaders ./CImg.h ./imageWriter.h)
+FILE(GLOB MyCppheaders ./imageWriter.h ./videoVerifier.h)
 
 # Exclude old unit test files - now handled by tests/ directory
 list(REMOVE_ITEM MyCppSources
@@ -24,13 +24,14 @@ add_executable(biosim4 ${MyCppSources} ${MyCppheaders})
 target_include_directories(biosim4 PRIVATE
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/src
-  ${OpenCV_INCLUDE_DIRS}
 )
 
 # Third-party headers as SYSTEM to mute their warnings
 target_include_directories(biosim4 SYSTEM PRIVATE
   ${toml11_SOURCE_DIR}
   ${cli11_SOURCE_DIR}/include
+  ${raylib_SOURCE_DIR}/src
+  ${FFMPEG_INCLUDE_DIRS}
 )
 
 # Mute deprecations only on this target (Clang/GCC)
@@ -41,11 +42,15 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
   )
 endif()
 
+# Link directories for FFmpeg
+target_link_directories(biosim4 PRIVATE ${FFMPEG_LIBRARY_DIRS})
+
 # Link libraries
 target_link_libraries(biosim4 PUBLIC
-  ${OpenCV_LIBS}
+  raylib
   ${OpenMP_CXX_LIBRARIES}
   toml11::toml11
+  ${FFMPEG_LIBRARIES}
 )
 
 # Explicitly link libc++ for toml11 support (fixes __hash_memory symbol issue)
