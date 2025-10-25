@@ -1,6 +1,7 @@
 #!/bin/bash
-# Selective build cleanup - preserves OpenCV artifacts
+# Selective build cleanup - preserves OpenCV and Google Test artifacts
 # This prevents the need to rebuild OpenCV from source (30-60 min)
+# and avoids re-downloading Google Test
 
 set -e  # Exit on error
 
@@ -15,7 +16,7 @@ if [ ! -d "$BUILD_DIR" ]; then
     exit 0
 fi
 
-echo "Cleaning build directory (preserving OpenCV artifacts)..."
+echo "Cleaning build directory (preserving OpenCV and Google Test artifacts)..."
 
 cd "$BUILD_DIR"
 
@@ -35,10 +36,10 @@ rm -f build.ninja
 rm -f rules.ninja
 rm -f install_manifest.txt
 
-# Remove all CMakeFiles EXCEPT OpenCV-related ones
-echo "  - Cleaning CMakeFiles (preserving OpenCV)..."
+# Remove all CMakeFiles EXCEPT OpenCV and Google Test related ones
+echo "  - Cleaning CMakeFiles (preserving OpenCV and Google Test)..."
 if [ -d "CMakeFiles" ]; then
-    find CMakeFiles -mindepth 1 -maxdepth 1 ! -name '*opencv*' -exec rm -rf {} + 2>/dev/null || true
+    find CMakeFiles -mindepth 1 -maxdepth 1 ! -name '*opencv*' ! -name '*googletest*' -exec rm -rf {} + 2>/dev/null || true
 fi
 
 # Remove biosim4 build artifacts
@@ -52,15 +53,18 @@ rm -rf Testing/
 echo ""
 echo "✓ Build directory cleaned successfully!"
 echo ""
-echo "OpenCV artifacts preserved in:"
-if [ -d "_deps/opencv-src" ]; then
-    echo "  - _deps/opencv-src/"
+echo "Preserved artifacts:"
+if [ -d "_deps/opencv-src" ] || [ -d "_deps/opencv-build" ] || [ -d "_deps/opencv-subbuild" ]; then
+    echo "OpenCV artifacts:"
+    [ -d "_deps/opencv-src" ] && echo "  - _deps/opencv-src/"
+    [ -d "_deps/opencv-build" ] && echo "  - _deps/opencv-build/"
+    [ -d "_deps/opencv-subbuild" ] && echo "  - _deps/opencv-subbuild/"
 fi
-if [ -d "_deps/opencv-build" ]; then
-    echo "  - _deps/opencv-build/"
-fi
-if [ -d "_deps/opencv-subbuild" ]; then
-    echo "  - _deps/opencv-subbuild/"
+if [ -d "_deps/googletest-src" ] || [ -d "_deps/googletest-build" ] || [ -d "_deps/googletest-subbuild" ]; then
+    echo "Google Test artifacts:"
+    [ -d "_deps/googletest-src" ] && echo "  - _deps/googletest-src/"
+    [ -d "_deps/googletest-build" ] && echo "  - _deps/googletest-build/"
+    [ -d "_deps/googletest-subbuild" ] && echo "  - _deps/googletest-subbuild/"
 fi
 echo ""
 echo "To rebuild, run:"
