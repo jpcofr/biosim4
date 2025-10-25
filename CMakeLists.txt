@@ -18,6 +18,7 @@ option(USE_FETCHCONTENT_OPENCV "Build OpenCV from source (slow first time, ~30-6
 option(ENABLE_VIDEO_GENERATION "Enable video file generation" ON)
 option(ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer for memory leak detection" OFF)
 option(ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer for race condition detection (cannot be used with ENABLE_SANITIZERS)" OFF)
+option(BUILD_DOCUMENTATION "Build Doxygen documentation" OFF)
 
 include(FetchContent)
 
@@ -135,6 +136,36 @@ enable_testing()
 add_subdirectory(src)
 add_subdirectory(tests)
 
+# ============================================================================
+# Doxygen Documentation
+# ============================================================================
+if(BUILD_DOCUMENTATION)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        message(STATUS "Doxygen found: ${DOXYGEN_EXECUTABLE}")
+
+        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+        # Copy Doxyfile to build directory
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} COPYONLY)
+
+        # Add custom target to build documentation
+        add_custom_target(docs
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM
+        )
+
+        message(STATUS "Documentation target 'docs' enabled")
+        message(STATUS "  Run: ninja docs")
+        message(STATUS "  Output: ${CMAKE_CURRENT_BINARY_DIR}/docs/html/index.html")
+    else()
+        message(WARNING "Doxygen not found. Install with: brew install doxygen graphviz")
+        message(WARNING "Documentation target will not be available")
+    endif()
+endif()
 
 install(FILES ./config/biosim4.ini DESTINATION config)
 install(DIRECTORY ./tools/ DESTINATION tools)

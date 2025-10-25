@@ -60,6 +60,7 @@ Document Contents
       - [Build Options](#build-options)
       - [Memory Leak Testing](#memory-leak-testing)
       - [Troubleshooting](#troubleshooting)
+      - [Generating Documentation](#generating-documentation)
   - [Execution](#execution)
     - [Running the Simulator](#running-the-simulator)
       - [With CMake Build (Recommended)](#with-cmake-build-recommended)
@@ -305,6 +306,7 @@ Configure with `-D<OPTION>=<VALUE>`:
 | `ENABLE_VIDEO_GENERATION` | `ON`    | Enable .avi video file generation                    |
 | `ENABLE_SANITIZERS`       | `OFF`   | Enable AddressSanitizer & UndefinedBehaviorSanitizer |
 | `ENABLE_THREAD_SANITIZER` | `OFF`   | Enable ThreadSanitizer                               |
+| `BUILD_DOCUMENTATION`     | `OFF`   | Build Doxygen documentation (requires doxygen)       |
 
 Examples:
 ```bash
@@ -365,6 +367,47 @@ ninja
 pkg-config --modversion opencv4
 ./src/biosim4  # Check for .avi files in output/images/
 ```
+
+#### Generating Documentation
+
+The project uses Doxygen to generate comprehensive API documentation from source code comments.
+
+**Prerequisites:**
+```bash
+# Install Doxygen and Graphviz (for dependency graphs)
+brew install doxygen graphviz
+```
+
+**Build Documentation:**
+```bash
+cd build
+cmake -G Ninja -DBUILD_DOCUMENTATION=ON ..
+ninja docs
+```
+
+**View Documentation:**
+```bash
+# Open in default browser
+open docs/html/index.html
+```
+
+The documentation includes:
+- Class and struct hierarchies with inheritance diagrams
+- Function and method documentation
+- File organization and dependencies
+- Source code browser with cross-references
+- Call graphs and collaboration diagrams
+- Search functionality
+
+**Configuration:** The `Doxyfile` in the project root controls documentation generation settings. Key features enabled:
+- Extracts documentation from all source files (even undocumented members)
+- Includes `src/` and `include/` directories
+- Excludes third-party code (`CImg.h`), build artifacts, and test files
+- Generates interactive HTML with tree view navigation
+- Creates class diagrams and include graphs (requires Graphviz)
+- **Output location**: `build/docs/` (automatically excluded from searches and git)
+
+**Note:** Generated documentation is in `build/docs/html/` and automatically excluded from version control and workspace searches.
 
 <a name="Execution"></a>
 ## Execution
