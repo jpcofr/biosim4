@@ -21,11 +21,9 @@
 namespace BioSim {
 
 /**
- * @brief Convert sensor enum to descriptive string
- * @param sensor Sensor enum value
- * @return Human-readable sensor name (e.g., "age", "population")
+ * Implementation of sensorName()
  *
- * Used for detailed output and logging.
+ * Maps Sensor enum to human-readable string. Used for detailed output and logging.
  */
 std::string sensorName(Sensor sensor) {
   switch (sensor) {
@@ -99,11 +97,9 @@ std::string sensorName(Sensor sensor) {
 }
 
 /**
- * @brief Convert action enum to descriptive string
- * @param action Action enum value
- * @return Human-readable action name (e.g., "move east", "emit signal 0")
+ * Implementation of actionName()
  *
- * Used for detailed output and logging.
+ * Maps Action enum to human-readable string. Used for detailed output and logging.
  */
 std::string actionName(Action action) {
   switch (action) {
@@ -403,7 +399,7 @@ void Individual::printGenome() const {
  * @see tools/graph-nnet.py for visualization script
  */
 void Individual::printIGraphEdgeList() const {
-  for (auto& conn : nnet.connections) {
+  for (const auto& conn : nnet.connections) {
     if (conn.sourceType == SENSOR) {
       std::cout << sensorShortName((Sensor)(conn.sourceNum));
     } else {
@@ -509,7 +505,8 @@ void displaySignalUse() {
 
   for (int16_t x = 0; x < parameterMngrSingleton.gridSize_X; ++x) {
     for (int16_t y = 0; y < parameterMngrSingleton.gridSize_Y; ++y) {
-      unsigned magnitude = pheromones.getMagnitude(0, {x, y});
+      Coordinate coord(x, y);
+      unsigned magnitude = pheromones.getMagnitude(0, coord);
       if (magnitude != 0) {
         ++count;
         sum += magnitude;

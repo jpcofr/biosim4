@@ -53,28 +53,26 @@ extern void initializeGeneration0();
 extern unsigned spawnNewGeneration(unsigned generation, unsigned murderCount);
 
 /**
- * @brief Display genome information for debugging
- * @param count Number of sample genomes to display
+ * Display genome information for debugging
+ * @see Implementation in analysis.cpp
  */
 extern void displaySampleGenomes(unsigned count);
 
 /**
- * @brief Execute the actions computed by an individual's neural network
- * @param indiv The individual performing actions
- * @param actionLevels Array of action output values from the neural network
+ * Execute the actions computed by an individual's neural network
+ * @see Full documentation in executeActions.cpp
  */
 extern void executeActions(Individual& indiv, std::array<float, Action::NUM_ACTIONS>& actionLevels);
 
 /**
- * @brief End-of-step housekeeping (apply queued actions, update signals)
- * @param simStep Current simulation step within the generation
- * @param generation Current generation number
+ * End-of-step housekeeping (apply queued actions, update signals)
+ * @see Implementation in endOfSimStep.cpp
  */
 extern void endOfSimulationStep(unsigned simStep, unsigned generation);
 
 /**
- * @brief End-of-generation processing (video output, logging, cleanup)
- * @param generation The generation that just completed
+ * End-of-generation processing (video output, logging, cleanup)
+ * @see Implementation in endOfGeneration.cpp
  */
 extern void endOfGeneration(unsigned generation);
 

@@ -549,7 +549,7 @@ void executeActions(Individual& indiv, std::array<float, Action::NUM_ACTIONS>& a
    * Construct final movement offset.
    * Each component is in {-1, 0, +1}, representing one grid step in that direction.
    */
-  Coordinate movementOffset = {(int16_t)(probX * signumX), (int16_t)(probY * signumY)};
+  Coordinate movementOffset((int16_t)(probX * signumX), (int16_t)(probY * signumY));
 
   /**
    * Validate and queue movement.

@@ -51,6 +51,14 @@ struct RandomUintGenerator {
 
  public:
   /**
+   * @brief Default constructor - initializes state to zero
+   *
+   * Note: You must call initialize() to properly seed the generator
+   * before generating random numbers.
+   */
+  RandomUintGenerator() : rngx(0), rngy(0), rngz(0), rngc(0), a(0), b(0), c(0), d(0) {}
+
+  /**
    * @brief Initialize and seed the random number generator
    *
    * Must be called before first use. Seeds both Marsaglia and Jenkins

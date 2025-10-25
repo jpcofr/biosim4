@@ -54,7 +54,7 @@ class Grid {
      * @brief Construct a column with specified height
      * @param numRows Number of rows in column
      */
-    Column(uint16_t numRows) : data{std::vector<uint16_t>(numRows, 0)} {}
+    explicit Column(uint16_t numRows) : data{std::vector<uint16_t>(numRows, 0)} {}
 
     /**
      * @brief Clear all cells in column to 0

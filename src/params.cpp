@@ -6,7 +6,7 @@
  * - Loading and parsing configuration files (biosim4.ini)
  * - Setting default parameter values
  * - Validating parameter types and ranges
- * - Supporting generation-specific parameter changes via @N syntax
+ * - Supporting generation-specific parameter changes via `@N` syntax
  *
  * @see params.h for the 4-step process to add new parameters
  */
@@ -352,13 +352,13 @@ void ParamManager::ingestParameter(std::string name, std::string val) {
  * This method:
  * 1. Opens the config file (registered via registerConfigFile())
  * 2. Parses each line, ignoring comments (#) and blank lines
- * 3. Supports generation-specific parameters using @N syntax (e.g., "population@100 = 5000")
+ * 3. Supports generation-specific parameters using `@N` syntax (e.g., "population@100 = 5000")
  * 4. Calls ingestParameter() for each valid parameter line
  * 5. Updates parameterChangeGenerationNumber when a parameter becomes active
  *
  * @note Config file format: "parameterName = value  # optional comment"
  * @note Generation-specific format: "parameterName@generationNum = value"
- * @note Parameters with @N syntax only apply when generationNumber >= N
+ * @note Parameters with `@N` syntax only apply when generationNumber >= N
  * @note std::ifstream is RAII - automatically closes when out of scope
  */
 void ParamManager::updateFromConfigFile(unsigned generationNumber) {
@@ -369,8 +369,8 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber) {
     while (getline(cFile, line)) {
       // Remove all whitespace for easier parsing
       line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-      if (line[0] == '#' || line.empty()) {
-        continue;  // Skip comment lines and blank lines
+      if (line.empty() || line[0] == '#') {
+        continue;  // Skip blank lines and comment lines
       }
       auto delimiterPos = line.find("=");
       auto name = line.substr(0, delimiterPos);

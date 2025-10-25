@@ -36,7 +36,7 @@ repos:
 
   # Python import sorting with isort (compatible with black)
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 5.13.2  # Last version compatible with Python 3.9
     hooks:
       - id: isort
         args: ['--profile=black', '--line-length=120']
@@ -54,3 +54,44 @@ repos:
     hooks:
       - id: cmake-format
         args: ['--config-files', '.cmake-format.yaml']
+
+  # C++ linting and static analysis
+  # NOTE: cpplint is set to warn_only mode to allow commits with style issues
+  # TODO: Fix cpplint warnings during CImg/OpenCV removal refactor
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      # Header guards and C++ style checking with cpplint
+      - id: cpplint
+        args: ['--filter=-legal/copyright,-build/c++11,-readability/todo,-build/header_guard', '--linelength=120']
+        exclude: '^src/CImg\.h$'
+        additional_dependencies: ['cpplint']
+        stages: [manual]  # Only run when explicitly requested with --hook-stage manual
+
+  # Static analysis with cppcheck (requires system installation)
+  # Install with: brew install cppcheck
+  - repo: local
+    hooks:
+      - id: cppcheck
+        name: cppcheck
+        entry: /opt/homebrew/bin/cppcheck
+        language: system
+        files: '\.(cpp|cc|cxx|c|h|hpp)$'
+        exclude: '^src/CImg\.h$'
+        args: ['-j4', '--enable=warning', '--suppress=missingIncludeSystem', '--suppress=normalCheckLevelMaxBranches', '--inline-suppr', '--error-exitcode=1', '--language=c++', '--std=c++20', '--quiet', '--max-configs=1', '--check-level=normal']
+
+  # Doxygen documentation warning check
+  # NOTE: Requires doxygen installed (brew install doxygen)
+  # NOTE: Doxygen warnings are set to manual mode to allow commits with doc issues
+  # TODO: Fix doxygen warnings during CImg/OpenCV removal refactor
+  - repo: local
+    hooks:
+      - id: doxygen-warnings
+        name: Check Doxygen Warnings
+        entry: bash -c 'doxygen Doxyfile 2>&1 | grep -i "warning" && exit 1 || exit 0'
+        language: system
+        files: '\.(h|hpp|cpp|md)$'
+        exclude: '^src/CImg\.h$'
+        pass_filenames: false
+        description: Run Doxygen and fail if there are warnings
+        stages: [manual]  # Only run when explicitly requested with --hook-stage manual

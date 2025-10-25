@@ -50,7 +50,7 @@ TEST_F(BasicTypesTest, DirAsInt) {
 
 TEST_F(BasicTypesTest, DirCopyAssignment) {
   Dir d1 = Dir(Compass::N);
-  Dir d2 = Compass::E;
+  Dir d2(Compass::E);
   d1 = d2;
   EXPECT_EQ(d1.asInt(), 5);
   d2 = d1;
@@ -58,14 +58,14 @@ TEST_F(BasicTypesTest, DirCopyAssignment) {
 }
 
 TEST_F(BasicTypesTest, DirAssignmentFromCompass) {
-  Dir d1 = Compass::SW;
+  Dir d1(Compass::SW);
   EXPECT_EQ(d1.asInt(), 0);
   d1 = Compass::SE;
   EXPECT_EQ(d1.asInt(), 2);
 }
 
 TEST_F(BasicTypesTest, DirEqualityWithCompass) {
-  Dir d1 = Compass::CENTER;
+  Dir d1(Compass::CENTER);
   EXPECT_EQ(d1, Compass::CENTER);
   d1 = Compass::SE;
   EXPECT_EQ(d1, Compass::SE);
@@ -74,8 +74,8 @@ TEST_F(BasicTypesTest, DirEqualityWithCompass) {
 }
 
 TEST_F(BasicTypesTest, DirEqualityWithDir) {
-  Dir d1 = Compass::N;
-  Dir d2 = Compass::N;
+  Dir d1(Compass::N);
+  Dir d2(Compass::N);
   EXPECT_EQ(d1, d2);
   EXPECT_EQ(d2, d1);
   d1 = Compass::NE;
@@ -84,7 +84,7 @@ TEST_F(BasicTypesTest, DirEqualityWithDir) {
 }
 
 TEST_F(BasicTypesTest, DirRotate) {
-  Dir d1 = Compass::NE;
+  Dir d1(Compass::NE);
   EXPECT_EQ(d1.rotate(1), Compass::E);
   EXPECT_EQ(d1.rotate(2), Compass::SE);
   EXPECT_EQ(d1.rotate(-1), Compass::N);
@@ -98,7 +98,7 @@ TEST_F(BasicTypesTest, DirAsNormalizedCoord) {
   EXPECT_EQ(c1.x, 0);
   EXPECT_EQ(c1.y, 0);
 
-  Dir d1 = Compass::SW;
+  Dir d1(Compass::SW);
   c1 = d1.asNormalizedCoord();
   EXPECT_EQ(c1.x, -1);
   EXPECT_EQ(c1.y, -1);
@@ -133,7 +133,7 @@ TEST_F(BasicTypesTest, DirAsNormalizedCoord) {
 }
 
 TEST_F(BasicTypesTest, DirAsNormalizedPolar) {
-  Dir d1 = Compass::SW;
+  Dir d1(Compass::SW);
   Polar p1 = d1.asNormalizedPolar();
   EXPECT_EQ(p1.mag, 1);
   EXPECT_EQ(p1.dir, Compass::SW);
@@ -358,7 +358,7 @@ TEST_F(BasicTypesTest, CoordWithDir) {
 TEST_F(BasicTypesTest, CoordRaySameness) {
   Coordinate c1 = Coordinate{0, 0};
   Coordinate c2 = Coordinate{10, 11};
-  Dir d1 = Compass::CENTER;
+  Dir d1(Compass::CENTER);
 
   EXPECT_FLOAT_EQ(c1.raySameness(c2), 1.0);  ///< special case - zero vector
   EXPECT_FLOAT_EQ(c2.raySameness(c1), 1.0);  ///< special case - zero vector

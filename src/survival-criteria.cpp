@@ -105,14 +105,14 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
      * 1. Not touch arena borders
      * 2. Have between minNeighbors and maxNeighbors (inclusive) within radius 1.5
      *
-     * Current parameters: minNeighbors=22, maxNeighbors=2 (NOTE: inverted, likely bug)
-     * This creates extremely restrictive conditions favoring isolated pairs.
+     * Current parameters: minNeighbors=2, maxNeighbors=22
+     * This creates conditions favoring small clusters.
      *
      * Scoring: 1.0 (pass) or 0.0 (fail)
      */
     case CHALLENGE_STRING: {
-      unsigned minNeighbors = 22;
-      unsigned maxNeighbors = 2;
+      unsigned minNeighbors = 2;
+      unsigned maxNeighbors = 22;
       float radius = 1.5;
 
       if (grid.isBorder(indiv.loc)) {
@@ -412,13 +412,13 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       unsigned count = 0;
       for (int16_t x = indiv.loc.x - 1; x <= indiv.loc.x + 1; ++x) {
         for (int16_t y = indiv.loc.y - 1; y <= indiv.loc.y + 1; ++y) {
-          Coordinate tloc = {x, y};
+          Coordinate tloc(x, y);
           if (tloc != indiv.loc && grid.isInBounds(tloc) && grid.isOccupiedAt(tloc)) {
             ++count;
             if (count == 1) {
               for (int16_t x1 = tloc.x - 1; x1 <= tloc.x + 1; ++x1) {
                 for (int16_t y1 = tloc.y - 1; y1 <= tloc.y + 1; ++y1) {
-                  Coordinate tloc1 = {x1, y1};
+                  Coordinate tloc1(x1, y1);
                   if (tloc1 != tloc && tloc1 != indiv.loc && grid.isInBounds(tloc1) && grid.isOccupiedAt(tloc1)) {
                     return {false, 0.0};
                   }

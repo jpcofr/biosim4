@@ -86,7 +86,7 @@ struct __attribute__((packed)) Dir {
    * @brief Construct a direction
    * @param dir Initial compass direction (default: CENTER)
    */
-  Dir(Compass dir = Compass::CENTER) : dir9{dir} {}
+  explicit Dir(Compass dir = Compass::CENTER) : dir9{dir} {}
 
   /**
    * @brief Assign from Compass enum
@@ -163,7 +163,7 @@ struct __attribute__((packed)) Coordinate {
    * @param x0 X component (default: 0)
    * @param y0 Y component (default: 0)
    */
-  Coordinate(int16_t x0 = 0, int16_t y0 = 0) : x{x0}, y{y0} {}
+  explicit Coordinate(int16_t x0 = 0, int16_t y0 = 0) : x{x0}, y{y0} {}
 
   /**
    * @brief Check if coordinate is normalized (components in [-1, 1])
@@ -181,7 +181,7 @@ struct __attribute__((packed)) Coordinate {
    * @brief Calculate Euclidean length (rounded down)
    * @return unsigned distance from origin
    */
-  unsigned length() const { return (int)(std::sqrt(x * x + y * y)); }
+  unsigned length() const { return static_cast<int>(std::sqrt(x * x + y * y)); }
 
   /**
    * @brief Convert coordinate to nearest compass direction
@@ -197,9 +197,13 @@ struct __attribute__((packed)) Coordinate {
 
   bool operator==(Coordinate c) const { return x == c.x && y == c.y; }
   bool operator!=(Coordinate c) const { return x != c.x || y != c.y; }
-  Coordinate operator+(Coordinate c) const { return Coordinate{(int16_t)(x + c.x), (int16_t)(y + c.y)}; }
-  Coordinate operator-(Coordinate c) const { return Coordinate{(int16_t)(x - c.x), (int16_t)(y - c.y)}; }
-  Coordinate operator*(int a) const { return Coordinate{(int16_t)(x * a), (int16_t)(y * a)}; }
+  Coordinate operator+(Coordinate c) const {
+    return Coordinate{static_cast<int16_t>(x + c.x), static_cast<int16_t>(y + c.y)};
+  }
+  Coordinate operator-(Coordinate c) const {
+    return Coordinate{static_cast<int16_t>(x - c.x), static_cast<int16_t>(y - c.y)};
+  }
+  Coordinate operator*(int a) const { return Coordinate{static_cast<int16_t>(x * a), static_cast<int16_t>(y * a)}; }
   Coordinate operator+(Dir d) const { return *this + d.asNormalizedCoord(); }
   Coordinate operator-(Dir d) const { return *this - d.asNormalizedCoord(); }
 

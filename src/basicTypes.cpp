@@ -57,14 +57,16 @@ constexpr Compass C = BioSim::Compass::CENTER;
  * ...
  * ```
  */
-const Dir rotations[72] = {SW, W,  NW, N,  NE, E,  SE, S,  S, SW, W, NW, N, NE, E, SE, SE, S,  SW, W,  NW, N,  NE, E,
-                           W,  NW, N,  NE, E,  SE, S,  SW, C, C,  C, C,  C, C,  C, C,  E,  SE, S,  SW, W,  NW, N,  NE,
-                           NW, N,  NE, E,  SE, S,  SW, W,  N, NE, E, SE, S, SW, W, NW, NE, E,  SE, S,  SW, W,  NW, N};
+const Dir rotations[72] = {
+    Dir(SW), Dir(W),  Dir(NW), Dir(N),  Dir(NE), Dir(E),  Dir(SE), Dir(S),  Dir(S),  Dir(SW), Dir(W), Dir(NW), Dir(N),
+    Dir(NE), Dir(E),  Dir(SE), Dir(SE), Dir(S),  Dir(SW), Dir(W),  Dir(NW), Dir(N),  Dir(NE), Dir(E), Dir(W),  Dir(NW),
+    Dir(N),  Dir(NE), Dir(E),  Dir(SE), Dir(S),  Dir(SW), Dir(C),  Dir(C),  Dir(C),  Dir(C),  Dir(C), Dir(C),  Dir(C),
+    Dir(C),  Dir(E),  Dir(SE), Dir(S),  Dir(SW), Dir(W),  Dir(NW), Dir(N),  Dir(NE),  // NOLINT
+    Dir(NW), Dir(N),  Dir(NE), Dir(E),  Dir(SE), Dir(S),  Dir(SW), Dir(W),  Dir(N),  Dir(NE), Dir(E), Dir(SE), Dir(S),
+    Dir(SW), Dir(W),  Dir(NW), Dir(NE), Dir(E),  Dir(SE), Dir(S),  Dir(SW), Dir(W),  Dir(NW), Dir(N)};  // NOLINT
 
 /**
- * @brief Rotate direction by specified number of steps
- * @param n Number of rotation steps (positive = clockwise, negative = counterclockwise)
- * @return Rotated direction
+ * Implementation of Dir::rotate(int n)
  *
  * Each step represents 45° rotation (8 steps = 360°). Negative values
  * rotate counterclockwise. Uses modulo 8 internally, so rotate(9) = rotate(1).
@@ -80,7 +82,7 @@ Dir Dir::rotate(int n) const {
 }
 
 /**
- * @brief Lookup table mapping Dir to normalized Coordinate offsets
+ * Lookup table mapping Dir to normalized Coordinate offsets
  *
  * Maps each compass direction to its corresponding unit vector offset.
  * Used for neighbor calculations and movement operations.
@@ -115,8 +117,7 @@ const Coordinate NormalizedCoords[9] = {
 };
 
 /**
- * @brief Convert direction to normalized coordinate offset
- * @return Coordinate with components in {-1, 0, 1}
+ * Implementation of Dir::asNormalizedCoord()
  *
  * Returns the unit vector offset for this direction. Used for
  * calculating neighbor positions and movement deltas.
@@ -133,8 +134,7 @@ Coordinate Dir::asNormalizedCoord() const {
 }
 
 /**
- * @brief Convert direction to normalized polar representation
- * @return Polar with magnitude 1 and this direction
+ * Implementation of Dir::asNormalizedPolar()
  *
  * Creates a unit polar vector. Useful for directional calculations
  * that require polar representation.
@@ -144,8 +144,7 @@ Polar Dir::asNormalizedPolar() const {
 }
 
 /**
- * @brief Normalize coordinate to unit vector direction
- * @return Coordinate with components in {-1, 0, 1}
+ * Implementation of Coordinate::normalize()
  *
  * Converts any coordinate to the closest 8-direction unit vector.
  * First determines the compass direction via asDir(), then converts
@@ -163,8 +162,7 @@ Coordinate Coordinate::normalize() const {
 }
 
 /**
- * @brief Convert coordinate to compass direction
- * @return Closest compass direction (or CENTER if zero)
+ * Implementation of Coordinate::asDir()
  *
  * Maps any 2D coordinate to one of the 8 compass directions (or CENTER).
  * Uses an optimized algorithm that rotates the coordinate system by 22.5°
@@ -197,7 +195,8 @@ Dir Coordinate::asDir() const {
   /// come to any of these lines is 8e-8 degrees, so the result is exact
   constexpr uint16_t tanN = 13860;
   constexpr uint16_t tanD = 33461;
-  const Dir conversion[16]{S, C, SW, N, SE, E, N, N, N, N, W, NW, N, NE, N, N};
+  const Dir conversion[16]{Dir(S), Dir(C), Dir(SW), Dir(N),  Dir(SE), Dir(E),  Dir(N), Dir(N),
+                           Dir(N), Dir(N), Dir(W),  Dir(NW), Dir(N),  Dir(NE), Dir(N), Dir(N)};
 
   const int32_t xp = x * tanD + y * tanN;
   const int32_t yp = y * tanD - x * tanN;
@@ -209,8 +208,7 @@ Dir Coordinate::asDir() const {
 }
 
 /**
- * @brief Convert coordinate to polar representation
- * @return Polar with integer magnitude and compass direction
+ * Implementation of Coordinate::asPolar()
  *
  * Creates polar representation using Euclidean distance as magnitude
  * and compass direction from asDir().
@@ -221,12 +219,11 @@ Dir Coordinate::asDir() const {
  * ```
  */
 Polar Coordinate::asPolar() const {
-  return Polar{(int)length(), asDir()};
+  return Polar{static_cast<int>(length()), asDir()};
 }
 
 /**
- * @brief Convert polar to cartesian coordinate
- * @return Coordinate representation of polar vector
+ * Implementation of Polar::asCoord()
  *
  * Converts polar (magnitude + direction) back to cartesian (x, y).
  * Uses 32.32 fixed-point arithmetic for precise diagonal calculations.
@@ -267,7 +264,7 @@ Coordinate Polar::asCoord() const {
   /// -1 for mag<0. An XOR with this copies the sign onto 1/2, to be exact
   /// we'd then also subtract it, but we don't need to be that precise.
 
-  int64_t temp = ((int64_t)mag >> 32) ^ ((1LL << 31) - 1);
+  int64_t temp = (static_cast<int64_t>(mag) >> 32) ^ ((1LL << 31) - 1);
   len = (len + temp) / (1LL << 32);  ///< Divide to make sure we get an arithmetic shift
 
   const Coordinate basis = NormalizedCoords[dir.asInt()];
@@ -275,9 +272,7 @@ Coordinate Polar::asCoord() const {
 }
 
 /**
- * @brief Calculate directional similarity between two coordinates
- * @param other Coordinate to compare against
- * @return Similarity value from -1.0 (opposite) to +1.0 (same direction)
+ * Implementation of Coordinate::raySameness(Coordinate other)
  *
  * Computes the cosine of the angle between two vectors:
  * - +1.0: Same direction (parallel)
@@ -297,7 +292,7 @@ Coordinate Polar::asCoord() const {
  * @note Uses 64-bit arithmetic to avoid overflow during intermediate calculations
  */
 float Coordinate::raySameness(Coordinate other) const {
-  int64_t mag = ((int64_t)x * x + y * y) * (other.x * other.x + other.y * other.y);
+  int64_t mag = (static_cast<int64_t>(x) * x + y * y) * (other.x * other.x + other.y * other.y);
   if (mag == 0) {
     return 1.0;  ///< anything is "same" as zero vector
   }
@@ -306,9 +301,7 @@ float Coordinate::raySameness(Coordinate other) const {
 }
 
 /**
- * @brief Calculate directional similarity with a compass direction
- * @param d Direction to compare against
- * @return Similarity value from -1.0 (opposite) to +1.0 (same direction)
+ * Implementation of Coordinate::raySameness(Dir d)
  *
  * Convenience overload that converts Dir to normalized coordinate before
  * comparing. Returns 1.0 if self is (0,0) or d is CENTER.

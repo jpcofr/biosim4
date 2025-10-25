@@ -107,7 +107,7 @@ Coordinate Grid::findEmptyLocation() const {
  * });
  * @endcode
  */
-void visitNeighborhood(Coordinate loc, float radius, std::function<void(Coordinate)> function) {
+void visitNeighborhood(Coordinate loc, float radius, std::function<void(Coordinate)> f) {
   // Iterate over x-coordinates within radius, clipped to grid bounds
   for (int dx = -std::min<int>(radius, loc.x);
        dx <= std::min<int>(radius, (parameterMngrSingleton.gridSize_X - loc.x) - 1); ++dx) {
@@ -124,7 +124,7 @@ void visitNeighborhood(Coordinate loc, float radius, std::function<void(Coordina
       assert(y >= 0 && y < parameterMngrSingleton.gridSize_Y);
 
       // Invoke callback with this valid in-bounds coordinate
-      function(Coordinate{x, y});
+      f(Coordinate{x, y});
     }
   }
 }

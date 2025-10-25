@@ -48,7 +48,7 @@ void Grid::createBarrier(unsigned barrierType) {
     for (int16_t x = minX; x <= maxX; ++x) {
       for (int16_t y = minY; y <= maxY; ++y) {
         grid.set(x, y, BARRIER);
-        barrierLocations.push_back({x, y});
+        barrierLocations.push_back(Coordinate(x, y));
       }
     }
   };
@@ -67,7 +67,7 @@ void Grid::createBarrier(unsigned barrierType) {
       for (int16_t x = minX; x <= maxX; ++x) {
         for (int16_t y = minY; y <= maxY; ++y) {
           grid.set(x, y, BARRIER);
-          barrierLocations.push_back({x, y});
+          barrierLocations.push_back(Coordinate(x, y));
         }
       }
     } break;
@@ -82,7 +82,7 @@ void Grid::createBarrier(unsigned barrierType) {
       for (int16_t x = minX; x <= maxX; ++x) {
         for (int16_t y = minY; y <= maxY; ++y) {
           grid.set(x, y, BARRIER);
-          barrierLocations.push_back({x, y});
+          barrierLocations.push_back(Coordinate(x, y));
         }
       }
     } break;
@@ -125,7 +125,7 @@ void Grid::createBarrier(unsigned barrierType) {
       for (int16_t x = minX; x <= maxX; ++x) {
         for (int16_t y = minY; y <= maxY; ++y) {
           grid.set(x, y, BARRIER);
-          barrierLocations.push_back({x, y});
+          barrierLocations.push_back(Coordinate(x, y));
         }
       }
     } break;
@@ -184,7 +184,7 @@ void Grid::createBarrier(unsigned barrierType) {
       unsigned verticalSliceSize = parameterMngrSingleton.gridSize_Y / (numberOfLocations + 1);
 
       for (unsigned n = 1; n <= numberOfLocations; ++n) {
-        Coordinate loc = {(int16_t)(parameterMngrSingleton.gridSize_X / 2), (int16_t)(n * verticalSliceSize)};
+        Coordinate loc((int16_t)(parameterMngrSingleton.gridSize_X / 2), (int16_t)(n * verticalSliceSize));
         visitNeighborhood(loc, radius, f);
         barrierCenters.push_back(loc);
       }
