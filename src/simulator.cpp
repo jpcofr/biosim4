@@ -126,7 +126,7 @@ ImageWriter imageWriter;
 /**
  * @brief Global parameter manager maintaining simulation configuration
  *
- * Loads settings from biosim4.ini and monitors for runtime changes.
+ * Loads settings from biosim4.toml and monitors for runtime changes.
  * Maintains an internal Params struct with validated parameter values.
  * Access via getParamRef() returns read-only reference.
  */
@@ -207,7 +207,7 @@ void simulationStepOneIndividual(Individual& individual, unsigned simulationStep
  *
  * **Initialization Sequence:**
  * 1. Display available sensors and actions (printSensorsActions)
- * 2. Load configuration from biosim4.ini (paramManager)
+ * 2. Load configuration from biosim4.toml (paramManager)
  * 3. Initialize random number generator (randomUint)
  * 4. Initialize global singletons (grid, pheromones, imageWriter, peeps)
  * 5. Create generation 0 with random genomes and placements
@@ -225,7 +225,7 @@ void simulationStepOneIndividual(Individual& individual, unsigned simulationStep
  * - Thread count: Configurable via numThreads parameter (OpenMP)
  *
  * **Configuration Hot-Reload:**
- * The paramManager checks biosim4.ini for changes at each generation boundary.
+ * The paramManager checks biosim4.toml for changes at each generation boundary.
  * Most parameters can be modified at runtime without restarting the simulation.
  *
  * **Video Generation:**
@@ -239,7 +239,7 @@ void simulationStepOneIndividual(Individual& individual, unsigned simulationStep
  * @param argc Command-line argument count
  * @param argv Command-line arguments (argv[1] = optional config file path)
  *
- * @note Default config file: "config/biosim4.ini"
+ * @note Default config file: "config/biosim4.toml"
  * @note This function does not return until maxGenerations is reached or runMode changes
  *
  * @see simulationStepOneIndividual() for per-creature execution
@@ -256,7 +256,7 @@ void simulator(int argc, char** argv) {
   // Skip initialization if argc==0 (params already set via setParams())
   if (argc != 0) {
     paramManager.setDefaults();
-    const char* configFile = argc > 1 ? argv[1] : "config/biosim4.ini";
+    const char* configFile = argc > 1 ? argv[1] : "config/biosim4.toml";
     paramManager.registerConfigFile(configFile);
     paramManager.updateFromConfigFile(0);
     paramManager.checkParameters();  // Validate and report configuration issues

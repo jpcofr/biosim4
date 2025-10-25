@@ -19,7 +19,7 @@
  * - Once per thread
  *
  * ## Configuration
- * Controlled by `config/biosim4.ini` parameters:
+ * Controlled by `config/biosim4.toml` parameters:
  * - `deterministic`: If true, use `RNGSeed` for reproducible sequences
  * - `RNGSeed`: Seed value when deterministic mode is enabled
  *

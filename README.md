@@ -83,7 +83,7 @@ Code walkthrough<a name="CodeWalkthrough"></a>
 ### Main data structures
 
 The code in the src directory compiles to a single console program named biosim4. When it is
-invoked, it will read parameters from a config file named config/biosim4.ini by default (or biosim4.ini in the root directory for backwards compatibility). A different
+invoked, it will read parameters from a config file named config/biosim4.toml by default. A different
 config file can be specified on the command line.
 
 The simulator will then configure a 2D arena where the creatures live. Class Grid (see grid.h and grid.cpp)
@@ -110,14 +110,14 @@ All the simulator code lives in the BS namespace (short for "biosim".)
 <a name="ConfigFile"></a>
 ### Config file
 
-The config file, named config/biosim4.ini by default, contains all the tunable parameters for a
+The config file, named config/biosim4.toml by default, contains all the tunable parameters for a
 simulation run. The biosim4 executable reads the config file at startup, then monitors it for
 changes during the simulation. Although it's not foolproof, many parameters can be modified during
 the simulation run. Class ParamManager (see params.h and params.cpp) manages the configuration
 parameters and makes them available to the simulator through a read-only pointer provided by
 ParamManager::getParamRef().
 
-See the provided config/biosim4.ini for documentation for each parameter. Most of the parameters
+See the provided config/biosim4.toml for documentation for each parameter. Most of the parameters
 in the config file correspond to members in struct Params (see params.h). A few additional
 parameters may be stored in struct Params. See the documentation in params.h for how to
 support new parameters.
@@ -342,7 +342,7 @@ mkdir build && cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON ..
 ninja
 cd ..
-./build/bin/biosim4 tests/configs/leak-test.ini
+./build/bin/biosim4 --preset quick
 ```
 
 Use the automated testing script:
@@ -431,12 +431,12 @@ cd /path/to/biosim4    # Navigate to project root if not already there
 ./build/bin/biosim4
 ```
 
-The simulator will automatically look for the configuration file in `config/biosim4.ini` (or `biosim4.ini` in the root directory for backwards compatibility), and will write output files to `output/images/` and `output/logs/` directories relative to the current directory.
+The simulator will automatically look for the configuration file in `config/biosim4.toml` (or `biosim4.toml` in the current directory), and will write output files to `output/images/` and `output/logs/` directories relative to the current directory.
 
 Optionally, specify a different config file:
 
 ```sh
-./build/bin/biosim4 path/to/config.ini
+./build/bin/biosim4 path/to/config.toml
 ```
 
 **Common mistake**: Don't run from inside the `build/` directory:
@@ -563,7 +563,7 @@ For custom testing, override individual parameters:
 
 ### Configuration
 
-The simulator reads parameters from `config/biosim4.ini` by default (or `biosim4.ini` in the root directory for backwards compatibility). You can also specify a different config file: Key parameters include:
+The simulator reads parameters from `config/biosim4.toml` by default (or `biosim4.toml` in the current directory). You can also specify a different config file. Key parameters include:
 
 - **maxGenerations**: Number of generations to simulate (default: 200000)
   - Set to a lower value (e.g., 100-500) for quick tests

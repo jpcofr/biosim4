@@ -161,7 +161,7 @@ if(BUILD_DOCUMENTATION)
     endif()
 endif()
 
-install(FILES ./config/biosim4.ini DESTINATION config)
+install(FILES ./config/biosim4.toml DESTINATION config)
 install(DIRECTORY ./tools/ DESTINATION tools)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

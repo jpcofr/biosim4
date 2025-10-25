@@ -119,8 +119,6 @@ std::optional<std::filesystem::path> ConfigManager::findConfigFile() const {
   const std::vector<std::filesystem::path> searchPaths = {
       "biosim4.toml",         // Current directory
       "config/biosim4.toml",  // Standard location
-      "biosim4.ini",          // Legacy INI format (backwards compat)
-      "config/biosim4.ini",   // Legacy standard location
   };
 
   for (const auto& path : searchPaths) {
@@ -134,17 +132,6 @@ std::optional<std::filesystem::path> ConfigManager::findConfigFile() const {
 
 bool ConfigManager::loadFromToml(const std::filesystem::path& path) {
   try {
-    // Detect file format
-    std::string ext = path.extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-    if (ext == ".ini") {
-      std::cout << "⚠️  Loading legacy INI format (consider migrating to TOML)" << std::endl;
-      // For now, fall back to legacy loading (will be removed later)
-      // TODO: Remove after full migration
-      return false;
-    }
-
     const auto data = toml::parse(path);
     loadedConfigPath_ = path.string();
 

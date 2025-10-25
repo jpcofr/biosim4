@@ -3,7 +3,7 @@
  * @brief Implementation of parameter management system for BioSim4
  *
  * This file implements the ParamManager class which handles:
- * - Loading and parsing configuration files (biosim4.ini)
+ * - Loading and parsing configuration files (biosim4.toml)
  * - Setting default parameter values
  * - Validating parameter types and ranges
  * - Supporting generation-specific parameter changes via `@N` syntax
@@ -28,7 +28,7 @@
  *    2. Add a member and its default value to privParams in ParamManager::setDefaults()
  *          in params.cpp
  *    3. Add an else clause to ParamManager::ingestParameter() in params.cpp
- *    4. Add a line to the user's parameter file (default name config/biosim4.ini)
+ *    4. Add a line to the user's parameter file (default name config/biosim4.toml)
  */
 
 namespace BioSim {
@@ -101,7 +101,7 @@ void ParamManager::setDefaults() {
 /**
  * @brief Registers the configuration file path for later loading
  *
- * @param filename Path to the configuration file (typically config/biosim4.ini)
+ * @param filename Path to the configuration file (typically config/biosim4.toml)
  *
  * This method stores the filename but does not load the file.
  * Call updateFromConfigFile() to actually parse and apply the config.
