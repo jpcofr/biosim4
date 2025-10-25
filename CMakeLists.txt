@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 4.1.2)
 project(BioSim4 VERSION 0.2.0)
 
+# Set default build type to Debug if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
+    message(STATUS "Setting build type to 'Debug' as none was specified.")
+endif()
+
 # C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

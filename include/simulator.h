@@ -50,16 +50,10 @@ constexpr unsigned CHALLENGE_ALTRUISM_SACRIFICE = 18;  ///< Survive through self
 /** @} */
 
 /**
- * @brief Global parameter manager
- *
- * Manages simulator parameters from config file and runtime updates.
- */
-extern ParamManager paramManager;
-
-/**
  * @brief Read-only access to simulator parameters
  *
- * Singleton reference to current configuration parameters.
+ * Global reference to current configuration parameters.
+ * Initialized by simulator() with configuration from ConfigManager.
  */
 extern const Params& parameterMngrSingleton;
 
@@ -86,25 +80,15 @@ extern Peeps peeps;
 
 /**
  * @brief Main simulator entry point
- * @param argc Command-line argument count
- * @param argv Command-line argument vector
+ * @param params Pre-configured simulation parameters from ConfigManager
  *
- * Initializes simulation from config file, runs evolution loop with three
+ * Initializes simulation with provided params, runs evolution loop with three
  * nested levels:
  * - Outer: each generation
  * - Middle: each simulation step within generation
  * - Inner: each individual (parallelized with OpenMP)
  *
  * Handles video generation, statistics logging, and genome analysis.
- */
-extern void simulator(int argc, char** argv);
-
-/**
- * @brief Modern simulator entry point (new config system)
- * @param params Pre-configured simulation parameters
- *
- * Overload that accepts directly configured Params struct from ConfigManager.
- * This is the modern interface - the argc/argv version is legacy.
  */
 extern void simulator(const Params& params);
 

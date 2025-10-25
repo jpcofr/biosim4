@@ -124,22 +124,24 @@ Peeps peeps;
 ImageWriter imageWriter;
 
 /**
- * @brief Global parameter manager maintaining simulation configuration
+ * @brief Global simulation parameters (read-only)
  *
- * Loads settings from biosim4.toml and monitors for runtime changes.
- * Maintains an internal Params struct with validated parameter values.
- * Access via getParamRef() returns read-only reference.
+ * Initialized by simulator() with configuration from ConfigManager.
+ * This replaces the legacy ParamManager + parameterMngrSingleton pattern.
+ * All simulation code accesses parameters through this global.
+ *
+ * @note Initialized once at simulator start, then remains constant
+ * throughout the simulation run (hot-reload not supported yet).
  */
-ParamManager paramManager;
+static Params g_params;
 
 /**
- * @brief Read-only singleton reference to current parameter values
+ * @brief Read-only reference to current simulation parameters
  *
- * Convenience reference to paramManager's internal Params struct.
- * Updated automatically when paramManager reloads configuration.
- * Use this instead of repeatedly calling getParamRef().
+ * Global reference for backward compatibility with existing code
+ * that previously used parameterMngrSingleton.
  */
-const Params& parameterMngrSingleton{paramManager.getParamRef()};
+const Params& parameterMngrSingleton = g_params;
 
 /**
  * @brief Execute one simulation step for a single individual
@@ -207,7 +209,7 @@ void simulationStepOneIndividual(Individual& individual, unsigned simulationStep
  *
  * **Initialization Sequence:**
  * 1. Display available sensors and actions (printSensorsActions)
- * 2. Load configuration from biosim4.toml (paramManager)
+ * 2. Copy provided params to global g_params (for parameterMngrSingleton compatibility)
  * 3. Initialize random number generator (randomUint)
  * 4. Initialize global singletons (grid, pheromones, imageWriter, peeps)
  * 5. Create generation 0 with random genomes and placements
@@ -217,16 +219,12 @@ void simulationStepOneIndividual(Individual& individual, unsigned simulationStep
  * - `pheromones`: Multi-layer signal grid (uint8 values, diffusion/fade)
  * - `peeps`: Indexed creature container (index 0 reserved, 1..population valid)
  * - `imageWriter`: Video frame capture system (synchronous mode)
- * - `paramManager`: Configuration management with hot-reload support
+ * - `g_params`: Global simulation parameters (accessed via parameterMngrSingleton)
  *
  * **Thread Architecture:**
  * - Main thread: Orchestrates loops, applies queued actions, I/O operations
  * - Worker threads: Parallel execution of simulationStepOneIndividual()
  * - Thread count: Configurable via numThreads parameter (OpenMP)
- *
- * **Configuration Hot-Reload:**
- * The paramManager checks biosim4.toml for changes at each generation boundary.
- * Most parameters can be modified at runtime without restarting the simulation.
  *
  * **Video Generation:**
  * When enabled (saveVideo=true), frames are captured periodically and compiled
@@ -236,10 +234,8 @@ void simulationStepOneIndividual(Individual& individual, unsigned simulationStep
  * Sample genomes are displayed to stdout at intervals (genomeAnalysisStride).
  * Pipe output to tools/graph-nnet.py for neural network visualization.
  *
- * @param argc Command-line argument count
- * @param argv Command-line arguments (argv[1] = optional config file path)
+ * @param params Pre-configured simulation parameters from ConfigManager
  *
- * @note Default config file: "config/biosim4.toml"
  * @note This function does not return until maxGenerations is reached or runMode changes
  *
  * @see simulationStepOneIndividual() for per-creature execution
@@ -248,30 +244,22 @@ void simulationStepOneIndividual(Individual& individual, unsigned simulationStep
  * @see spawnNewGeneration() for reproduction logic
  * @see initializeGeneration0() for initial population creation
  */
-void simulator(int argc, char** argv) {
+void simulator(const Params& params) {
   // Display available sensors and actions for debugging/verification
   printSensorsActions();
 
-  // Initialize parameter system with defaults, then load from config file
-  // Skip initialization if argc==0 (params already set via setParams())
-  if (argc != 0) {
-    paramManager.setDefaults();
-    const char* configFile = argc > 1 ? argv[1] : "config/biosim4.toml";
-    paramManager.registerConfigFile(configFile);
-    paramManager.updateFromConfigFile(0);
-    paramManager.checkParameters();  // Validate and report configuration issues
-  }
+  // Copy parameters to global storage for access by all simulation code
+  g_params = params;
+  const Params& p = parameterMngrSingleton;  // Local reference for convenience
 
   // Seed the global random number generator (per-thread instances seeded later)
   randomUint.initialize();
 
   // Initialize global singleton data structures with configured dimensions
-  grid.initialize(parameterMngrSingleton.gridSize_X, parameterMngrSingleton.gridSize_Y);
-  pheromones.initialize(parameterMngrSingleton.signalLayers, parameterMngrSingleton.gridSize_X,
-                        parameterMngrSingleton.gridSize_Y);
-  imageWriter.init(parameterMngrSingleton.signalLayers, parameterMngrSingleton.gridSize_X,
-                   parameterMngrSingleton.gridSize_Y);
-  peeps.initialize(parameterMngrSingleton.population);
+  grid.initialize(p.gridSize_X, p.gridSize_Y);
+  pheromones.initialize(p.signalLayers, p.gridSize_X, p.gridSize_Y);
+  imageWriter.init(p.signalLayers, p.gridSize_X, p.gridSize_Y);
+  peeps.initialize(p.population);
 
   // Create the initial population with random genomes and positions
   unsigned currentGeneration = 0;
@@ -280,23 +268,23 @@ void simulator(int argc, char** argv) {
   unsigned murderCount;  // Tracks deaths during generation (for logging)
 
   // OpenMP parallel region: shared data is read-only, mutations via deferred queues
-#pragma omp parallel num_threads(parameterMngrSingleton.numThreads) default(shared)
+#pragma omp parallel num_threads(p.numThreads) default(shared)
   {
     // Each thread initializes its own random number generator instance
     randomUint.initialize();
 
     // Outer loop: iterate through generations until stopping condition
-    while (runMode == RunMode::RUN && currentGeneration < parameterMngrSingleton.maxGenerations) {
+    while (runMode == RunMode::RUN && currentGeneration < p.maxGenerations) {
       // Reset death counter for this generation (single-threaded initialization)
 #pragma omp single
       murderCount = 0;
 
       // Middle loop: fixed number of simulation steps per generation
-      for (unsigned simulationStep = 0; simulationStep < parameterMngrSingleton.stepsPerGeneration; ++simulationStep) {
+      for (unsigned simulationStep = 0; simulationStep < p.stepsPerGeneration; ++simulationStep) {
         // Inner loop (parallelized): execute one step for each living creature
         // Note: index 0 is reserved in peeps, valid indices start at 1
 #pragma omp for schedule(auto)
-        for (unsigned individual = 1; individual <= parameterMngrSingleton.population; ++individual)
+        for (unsigned individual = 1; individual <= p.population; ++individual)
           if (peeps[individual].alive)
             simulationStepOneIndividual(peeps[individual], simulationStep);
 
@@ -315,15 +303,12 @@ void simulator(int argc, char** argv) {
         // End-of-generation tasks: video output, logging, statistics
         endOfGeneration(currentGeneration);
 
-        // Hot-reload configuration file (allows runtime parameter changes)
-        paramManager.updateFromConfigFile(currentGeneration + 1);
-
         // Apply selection pressure and create next generation from survivors
         unsigned numberSurvivors = spawnNewGeneration(currentGeneration, murderCount);
 
         // Periodically display sample genomes for analysis/debugging
-        if (numberSurvivors > 0 && (currentGeneration % parameterMngrSingleton.genomeAnalysisStride == 0))
-          displaySampleGenomes(parameterMngrSingleton.displaySampleGenomes);
+        if (numberSurvivors > 0 && (currentGeneration % p.genomeAnalysisStride == 0))
+          displaySampleGenomes(p.displaySampleGenomes);
 
         // Restart from generation 0 if population went extinct
         if (numberSurvivors == 0)
@@ -338,28 +323,6 @@ void simulator(int argc, char** argv) {
   displaySampleGenomes(3);
 
   std::cout << "Simulator exit." << std::endl;
-}
-
-/**
- * @brief Modern simulator entry point accepting pre-configured Params
- *
- * This is a temporary bridge function that allows the new ConfigManager-based
- * main.cpp to work with the legacy simulator code. The full integration
- * (refactoring simulator() to use Params directly) will come later.
- *
- * @param params Pre-configured simulation parameters from ConfigManager
- */
-void simulator(const Params& params) {
-  // Initialize the legacy ParamManager with the provided params
-  // Note: This is a bridge pattern - eventually simulator() should
-  // be refactored to accept Params directly without needing ParamManager
-  paramManager.setParams(params);
-
-  // Call the legacy simulator with special marker argc=0 to skip config loading
-  // argc=0 signals that params have already been initialized
-  int dummy_argc = 0;  // Special value: skip config file loading
-  char* dummy_argv[] = {(char*)"biosim4", nullptr};
-  simulator(dummy_argc, dummy_argv);
 }
 
 }  // namespace BioSim

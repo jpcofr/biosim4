@@ -3,14 +3,17 @@
 
 /**
  * @file params.h
- * @brief Global simulator parameters and configuration management
+ * @brief Global simulator parameters and configuration
  *
  * ## Adding a New Parameter
- * Follow this 4-step process:
+ * Follow this 5-step process:
  * 1. Add a member to struct Params in params.h
- * 2. Add member and default value to privParams in ParamManager::setDefault() (params.cpp)
- * 3. Add an else clause to ParamManager::ingestParameter() (params.cpp)
- * 4. Add a line to the user's parameter file (default: config/biosim4.ini)
+ * 2. Add default value in ConfigManager::ConfigManager() constructor (configManager.cpp)
+ * 3. Add TOML parsing logic in ConfigManager::loadFromToml() (configManager.cpp)
+ * 4. Add string-to-value conversion in ConfigManager::setParameterInternal() (configManager.cpp)
+ * 5. Add to config/biosim4.toml with documentation (use TOML syntax)
+ *
+ * @see configManager.h for the modern configuration system
  */
 
 #include <string>
@@ -30,10 +33,12 @@ extern RunMode runMode;
  * @struct Params
  * @brief Configuration parameters for the simulator
  *
- * A private copy of Params is initialized by ParamManager::init(), then
- * modified by UI events via ParamManager::uiMonitor(). The main simulator thread
- * can get an updated, read-only, stable snapshot of Params with
- * ParamManager::paramsSnapshot.
+ * A global instance of Params is initialized by the simulator() function
+ * with configuration from ConfigManager. The simulator and all subsystems
+ * access this configuration via the global parameterMngrSingleton reference.
+ *
+ * @see ConfigManager for configuration loading and management
+ * @see parameterMngrSingleton global reference in simulator.h
  */
 struct Params {
   /// Population and generation settings
@@ -100,84 +105,6 @@ struct Params {
   /// Automatic state tracking (not set via config file)
   unsigned parameterChangeGenerationNumber;  ///< Most recent generation with automatic parameter change
 };
-
-/**
- * @class ParamManager
- * @brief Manages parameter configuration and updates
- *
- * Provides centralized parameter management with config file monitoring
- * and runtime updates.
- */
-class ParamManager {
- public:
-  /**
-   * @brief Construct manager with default parameters loaded.
-   *
-   * Ensures callers (including unit tests) see sensible values even if they
-   * never call setDefaults() explicitly.
-   */
-  ParamManager();
-
-  /**
-   * @brief Get read-only reference to current parameters
-   * @return const reference to Params
-   */
-  const Params& getParamRef() const { return privParams; }
-
-  /**
-   * @brief Set parameters directly (for ConfigManager integration)
-   * @param params Parameters to use
-   *
-   * Allows external configuration systems (like ConfigManager) to inject
-   * pre-configured parameters. This is a bridge method for modernization.
-   */
-  void setParams(const Params& params) { privParams = params; }
-
-  /**
-   * @brief Initialize parameters with default values
-   */
-  void setDefaults();
-
-  /**
-   * @brief Register a configuration file for monitoring
-   * @param filename Path to config file
-   */
-  void registerConfigFile(const char* filename);
-
-  /**
-   * @brief Update parameters from config file
-   * @param generationNumber Current generation number
-   */
-  void updateFromConfigFile(unsigned generationNumber);
-
-  /**
-   * @brief Validate parameter values and constraints
-   */
-  void checkParameters();
-
- private:
-  Params privParams;           ///< Private parameter storage
-  std::string configFilename;  ///< Path to configuration file
-
-  /**
-   * @brief Parse and apply a single parameter
-   * @param name Parameter name
-   * @param val Parameter value as string
-   */
-  void ingestParameter(std::string name, std::string val);
-};
-
-/**
- * @brief Initialize parameters from command-line arguments and config file
- * @param argc Argument count
- * @param argv Argument vector
- * @return Params instance with default values overridden by config file
- *
- * Returns a copy of params with default values overridden by the values
- * in the specified config file. The filename of the config file is saved
- * inside the params for future reference.
- */
-Params paramsInit(int argc, char** argv);
 
 }  // namespace BioSim
 

@@ -111,16 +111,15 @@ All the simulator code lives in the BS namespace (short for "biosim".)
 ### Config file
 
 The config file, named config/biosim4.toml by default, contains all the tunable parameters for a
-simulation run. The biosim4 executable reads the config file at startup, then monitors it for
-changes during the simulation. Although it's not foolproof, many parameters can be modified during
-the simulation run. Class ParamManager (see params.h and params.cpp) manages the configuration
-parameters and makes them available to the simulator through a read-only pointer provided by
-ParamManager::getParamRef().
+simulation run. The biosim4 executable reads the config file at startup. ConfigManager (see
+configManager.h and configManager.cpp) manages the configuration parameters. In main.cpp,
+ConfigManager loads the configuration and passes it to the simulator via `simulator(config.getParams())`.
+The simulator then copies these parameters to a global `Params` struct that's accessible throughout
+the codebase via the `parameterMngrSingleton` reference (defined in simulator.cpp).
 
 See the provided config/biosim4.toml for documentation for each parameter. Most of the parameters
-in the config file correspond to members in struct Params (see params.h). A few additional
-parameters may be stored in struct Params. See the documentation in params.h for how to
-support new parameters.
+in the config file correspond to members in struct Params (see params.h). See the documentation
+in params.h and configManager.h for how to support new parameters.
 
 
 <a name="ProgramOutput"></a>
