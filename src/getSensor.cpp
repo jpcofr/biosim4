@@ -128,7 +128,7 @@ float getSignalDensityAlongAxis(unsigned layerNum, Coordinate loc, Dir dir) {
       Coordinate offset = tloc - loc;
       double proj = (dirVecX * offset.x +
                      dirVecY * offset.y);  // Magnitude of projection along dir
-      double contrib = (proj * pheromones.getMagnitude(layerNum, loc)) /
+      double contrib = (proj * pheromones.getMagnitude(layerNum, tloc)) /
                        (offset.x * offset.x + offset.y * offset.y);
       sum += contrib;
     }
