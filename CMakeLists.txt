@@ -64,6 +64,17 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 
+# Fetch spdlog (includes bundled fmt)
+FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG v1.16.0
+  GIT_SHALLOW TRUE
+)
+
+# Configure spdlog to use its bundled fmt
+set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "Use bundled fmt library" FORCE)
+
 # Configure raylib build options (disable unused features)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
@@ -72,8 +83,8 @@ set(SUPPORT_MODULE_RAUDIO OFF CACHE BOOL "" FORCE)
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-# Make dependencies available
-FetchContent_MakeAvailable(googletest toml11 cli11 raylib)
+# Make dependencies available (note: fmt comes bundled with spdlog)
+FetchContent_MakeAvailable(googletest toml11 cli11 raylib spdlog)
 
 # Find FFmpeg libraries using pkg-config (for static linking)
 find_package(PkgConfig REQUIRED)

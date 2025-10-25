@@ -29,6 +29,8 @@
 #include "random.h"
 #include "simulator.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <cassert>
 #include <iostream>
 #include <list>
@@ -657,7 +659,7 @@ Genome generateChildGenome(const std::vector<Genome>& parentGenomes) {
   const Genome& g2 = parentGenomes[parent2Idx];
 
   if (g1.empty() || g2.empty()) {
-    std::cout << "invalid genome" << std::endl;
+    fmt::print("invalid genome\n");
     assert(false);
   }
 

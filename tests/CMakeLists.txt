@@ -28,14 +28,15 @@ target_include_directories(biosim4_lib PUBLIC
 target_include_directories(biosim4_lib SYSTEM PUBLIC
   ${toml11_SOURCE_DIR}
   ${raylib_SOURCE_DIR}/src
+  ${spdlog_SOURCE_DIR}/include
   ${FFMPEG_INCLUDE_DIRS}
 )
 
 # Link directories for FFmpeg
 target_link_directories(biosim4_lib PUBLIC ${FFMPEG_LIBRARY_DIRS})
 
-# Link raylib and FFmpeg to the library
-target_link_libraries(biosim4_lib PUBLIC raylib ${FFMPEG_LIBRARIES})
+# Link raylib, spdlog, and FFmpeg to the library
+target_link_libraries(biosim4_lib PUBLIC raylib spdlog::spdlog ${FFMPEG_LIBRARIES})
 
 # Apply the same compilation and linking flags as the main executable
 target_compile_options(biosim4_lib PRIVATE -O3 -Wall -fexceptions -fopenmp)

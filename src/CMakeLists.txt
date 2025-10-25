@@ -31,6 +31,7 @@ target_include_directories(biosim4 SYSTEM PRIVATE
   ${toml11_SOURCE_DIR}
   ${cli11_SOURCE_DIR}/include
   ${raylib_SOURCE_DIR}/src
+  ${spdlog_SOURCE_DIR}/include
   ${FFMPEG_INCLUDE_DIRS}
 )
 
@@ -46,8 +47,10 @@ endif()
 target_link_directories(biosim4 PRIVATE ${FFMPEG_LIBRARY_DIRS})
 
 # Link libraries
+# Note: spdlog includes fmt, no need for separate fmt::fmt
 target_link_libraries(biosim4 PUBLIC
   raylib
+  spdlog::spdlog
   ${OpenMP_CXX_LIBRARIES}
   toml11::toml11
   ${FFMPEG_LIBRARIES}

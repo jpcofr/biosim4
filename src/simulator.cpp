@@ -25,12 +25,14 @@
 #include "simulator.h"
 
 #include "imageWriter.h"
+#include "logger.h"
+
+#include <spdlog/fmt/fmt.h>
 
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <filesystem>
-#include <iostream>
 #include <utility>
 
 /**
@@ -322,7 +324,8 @@ void simulator(const Params& params) {
   // Final genome report for debugging/analysis
   displaySampleGenomes(3);
 
-  std::cout << "Simulator exit." << std::endl;
+  Logger::print("Simulator exit.");
+  Logger::info("Simulation completed successfully");
 }
 
 }  // namespace BioSim

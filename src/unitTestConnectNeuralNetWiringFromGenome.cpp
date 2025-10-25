@@ -2,6 +2,8 @@
 
 #include "simulator.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <iostream>
 
 namespace BioSim {
@@ -28,13 +30,13 @@ void unitTestConnectNeuralNetWiringFromGenome() {
   indiv.createWiringFromGenome();
 
   for (auto& conn : indiv.nnet.connections) {
-    std::cout << (conn.sourceType == SENSOR ? "SENSOR" : "NEURON") << " " << conn.sourceNum << " -> "
-              << (conn.sinkType == ACTION ? "ACTION" : "NEURON") << " " << conn.sinkNum << " at " << conn.weight
-              << std::endl;
+    fmt::print("{} {} -> {} {} at {}\n", (conn.sourceType == SENSOR ? "SENSOR" : "NEURON"),
+               static_cast<int>(conn.sourceNum), (conn.sinkType == ACTION ? "ACTION" : "NEURON"),
+               static_cast<int>(conn.sinkNum), conn.weight);
   }
 
   ///    for (unsigned n = 0; n < indiv.nnet.neurons.size(); ++n) {
-  ///        std::cout << n << " " << indiv.nnet.neurons[n].numInputs << " inputs" << std::endl;
+  ///        fmt::print("{} {} inputs\n", n, indiv.nnet.neurons[n].numInputs);
   ///    }
 }
 

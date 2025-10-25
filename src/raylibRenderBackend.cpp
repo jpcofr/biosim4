@@ -13,13 +13,14 @@
  * - H.264 codec with MP4/AVI container support
  */
 
+#include "logger.h"
 #include "params.h"
 #include "renderBackend.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <cmath>
 #include <fstream>
-#include <iomanip>
-#include <iostream>
 #include <sstream>
 #include <vector>
 
@@ -151,7 +152,7 @@ void RaylibRenderBackend::startNewGeneration() {
 
 void RaylibRenderBackend::beginFrame(unsigned simStep, unsigned generation) {
   if (frameInProgress_) {
-    std::cerr << "Warning: beginFrame() called without endFrame(). Discarding previous frame." << std::endl;
+    Logger::warning("beginFrame() called without endFrame(). Discarding previous frame.");
     UnloadImage(currentFrame_);
   }
 
@@ -166,7 +167,7 @@ void RaylibRenderBackend::beginFrame(unsigned simStep, unsigned generation) {
 
 void RaylibRenderBackend::drawChallengeZone(ChallengeZoneType zoneType, unsigned simStep, unsigned stepsPerGeneration) {
   if (!frameInProgress_) {
-    std::cerr << "Error: drawChallengeZone() called before beginFrame()" << std::endl;
+    Logger::error("drawChallengeZone() called before beginFrame()");
     return;
   }
 
@@ -205,7 +206,7 @@ void RaylibRenderBackend::drawChallengeZone(ChallengeZoneType zoneType, unsigned
 
 void RaylibRenderBackend::drawRectangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2, const Color& color) {
   if (!frameInProgress_) {
-    std::cerr << "Error: drawRectangle() called before beginFrame()" << std::endl;
+    Logger::error("drawRectangle() called before beginFrame()");
     return;
   }
 
@@ -251,7 +252,7 @@ void RaylibRenderBackend::drawRectangle(int16_t x1, int16_t y1, int16_t x2, int1
 
 void RaylibRenderBackend::drawCircle(int16_t centerX, int16_t centerY, uint16_t radius, const Color& color) {
   if (!frameInProgress_) {
-    std::cerr << "Error: drawCircle() called before beginFrame()" << std::endl;
+    Logger::error("drawCircle() called before beginFrame()");
     return;
   }
 
@@ -289,7 +290,7 @@ void RaylibRenderBackend::drawCircle(int16_t centerX, int16_t centerY, uint16_t 
 
 void RaylibRenderBackend::endFrame() {
   if (!frameInProgress_) {
-    std::cerr << "Warning: endFrame() called without beginFrame()" << std::endl;
+    Logger::warning("endFrame() called without beginFrame()");
     return;
   }
 
@@ -305,11 +306,11 @@ void RaylibRenderBackend::endFrame() {
 
 bool RaylibRenderBackend::saveVideo(unsigned generation, const std::string& outputPath) {
   if (frameBuffer_.empty()) {
-    std::cerr << "Warning: No frames to save for generation " << generation << std::endl;
+    Logger::warning("No frames to save for generation {}", generation);
     return false;
   }
 
-  std::cout << "Saving " << frameBuffer_.size() << " frames for generation " << generation << std::endl;
+  Logger::info("Saving {} frames for generation {}", frameBuffer_.size(), generation);
 
   return exportAndEncodeVideo(generation, outputPath);
 }
@@ -340,7 +341,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   videoPath << outputPath << "/gen-" << std::setfill('0') << std::setw(6) << generation << ".avi";
   std::string outputFile = videoPath.str();
 
-  std::cout << "Encoding " << frameBuffer_.size() << " frames using FFmpeg API..." << std::endl;
+  Logger::info("Encoding {} frames using FFmpeg API...", frameBuffer_.size());
 
   // Initialize FFmpeg codec
   const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -348,15 +349,15 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
     // Fallback to MPEG4 if H264 not available
     codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
     if (!codec) {
-      std::cerr << "Error: No suitable video codec found (H264/MPEG4)" << std::endl;
+      Logger::error("No suitable video codec found (H264/MPEG4)");
       return false;
     }
-    std::cout << "Using MPEG-4 codec (H.264 not available)" << std::endl;
+    Logger::info("Using MPEG-4 codec (H.264 not available)");
   }
 
   AVCodecContext* codecCtx = avcodec_alloc_context3(codec);
   if (!codecCtx) {
-    std::cerr << "Error: Could not allocate codec context" << std::endl;
+    Logger::error("Could not allocate codec context");
     return false;
   }
 
@@ -378,7 +379,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
 
   // Open codec
   if (avcodec_open2(codecCtx, codec, nullptr) < 0) {
-    std::cerr << "Error: Could not open codec" << std::endl;
+    Logger::error("Could not open codec");
     avcodec_free_context(&codecCtx);
     return false;
   }
@@ -387,7 +388,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   AVFormatContext* formatCtx = nullptr;
   avformat_alloc_output_context2(&formatCtx, nullptr, "avi", outputFile.c_str());
   if (!formatCtx) {
-    std::cerr << "Error: Could not create format context" << std::endl;
+    Logger::error("Could not create format context");
     avcodec_free_context(&codecCtx);
     return false;
   }
@@ -395,7 +396,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   // Add video stream
   AVStream* stream = avformat_new_stream(formatCtx, nullptr);
   if (!stream) {
-    std::cerr << "Error: Could not create stream" << std::endl;
+    Logger::error("Could not create stream");
     avformat_free_context(formatCtx);
     avcodec_free_context(&codecCtx);
     return false;
@@ -407,7 +408,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   // Open output file
   if (!(formatCtx->oformat->flags & AVFMT_NOFILE)) {
     if (avio_open(&formatCtx->pb, outputFile.c_str(), AVIO_FLAG_WRITE) < 0) {
-      std::cerr << "Error: Could not open output file: " << outputFile << std::endl;
+      Logger::error("Could not open output file: {}", outputFile);
       avformat_free_context(formatCtx);
       avcodec_free_context(&codecCtx);
       return false;
@@ -416,7 +417,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
 
   // Write header
   if (avformat_write_header(formatCtx, nullptr) < 0) {
-    std::cerr << "Error: Could not write format header" << std::endl;
+    Logger::error("Could not write format header");
     avio_closep(&formatCtx->pb);
     avformat_free_context(formatCtx);
     avcodec_free_context(&codecCtx);
@@ -426,7 +427,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   // Create frame and packet
   AVFrame* frame = av_frame_alloc();
   if (!frame) {
-    std::cerr << "Error: Could not allocate frame" << std::endl;
+    Logger::error("Could not allocate frame");
     av_write_trailer(formatCtx);
     avio_closep(&formatCtx->pb);
     avformat_free_context(formatCtx);
@@ -439,7 +440,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   frame->height = codecCtx->height;
 
   if (av_frame_get_buffer(frame, 0) < 0) {
-    std::cerr << "Error: Could not allocate frame data" << std::endl;
+    Logger::error("Could not allocate frame data");
     av_frame_free(&frame);
     av_write_trailer(formatCtx);
     avio_closep(&formatCtx->pb);
@@ -452,7 +453,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   SwsContext* swsCtx = sws_getContext(imageWidth_, imageHeight_, AV_PIX_FMT_RGBA, codecCtx->width, codecCtx->height,
                                       codecCtx->pix_fmt, SWS_BILINEAR, nullptr, nullptr, nullptr);
   if (!swsCtx) {
-    std::cerr << "Error: Could not create scaler context" << std::endl;
+    Logger::error("Could not create scaler context");
     av_frame_free(&frame);
     av_write_trailer(formatCtx);
     avio_closep(&formatCtx->pb);
@@ -474,7 +475,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
 
     // Send frame to encoder
     if (avcodec_send_frame(codecCtx, frame) < 0) {
-      std::cerr << "Error: Could not send frame " << i << " to encoder" << std::endl;
+      Logger::error("Could not send frame {} to encoder", i);
       continue;
     }
 
@@ -506,7 +507,7 @@ bool RaylibRenderBackend::exportAndEncodeVideo(unsigned generation, const std::s
   avformat_free_context(formatCtx);
   avcodec_free_context(&codecCtx);
 
-  std::cout << "Video saved: " << outputFile << std::endl;
+  Logger::success("Video saved: {}", outputFile);
   return true;
 }
 

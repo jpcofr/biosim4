@@ -5,11 +5,13 @@
 
 #include "configManager.h"
 
+#include "logger.h"
+
+#include <spdlog/fmt/fmt.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
-#include <iomanip>
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <toml.hpp>
@@ -73,7 +75,7 @@ bool ConfigManager::load(const std::string& configPath, const std::map<std::stri
   // Step 1: Load from file (if specified or found)
   if (!configPath.empty()) {
     if (!std::filesystem::exists(configPath)) {
-      std::cerr << "❌ Config file not found: " << configPath << std::endl;
+      Logger::error("Config file not found: {}", configPath);
       return false;
     }
     if (!loadFromToml(configPath)) {
@@ -83,12 +85,12 @@ bool ConfigManager::load(const std::string& configPath, const std::map<std::stri
     // Auto-search for config file
     auto foundPath = findConfigFile();
     if (foundPath) {
-      std::cout << "📄 Found config: " << *foundPath << std::endl;
+      Logger::print("📄 Found config: {}", foundPath->string());
       if (!loadFromToml(*foundPath)) {
         return false;
       }
     } else {
-      std::cout << "ℹ️  No config file found, using defaults" << std::endl;
+      Logger::print("ℹ️  No config file found, using defaults");
     }
   }
 
@@ -98,9 +100,9 @@ bool ConfigManager::load(const std::string& configPath, const std::map<std::stri
   // Step 3: Apply command-line overrides
   for (const auto& [key, value] : overrides) {
     if (!setParameter(key, value)) {
-      std::cerr << "⚠️  Failed to apply override: " << key << "=" << value << std::endl;
+      Logger::warning("Failed to apply override: {}={}", key, value);
     } else {
-      std::cout << "⚙️  Override: " << key << " = " << value << std::endl;
+      Logger::print("⚙️  Override: {} = {}", key, value);
     }
   }
 
@@ -108,7 +110,7 @@ bool ConfigManager::load(const std::string& configPath, const std::map<std::stri
   try {
     validate();
   } catch (const std::exception& e) {
-    std::cerr << "❌ Configuration validation failed: " << e.what() << std::endl;
+    Logger::error("Configuration validation failed: {}", e.what());
     return false;
   }
 
@@ -191,11 +193,11 @@ bool ConfigManager::loadFromToml(const std::filesystem::path& path) {
         params_.challenge = toml::find<int>(chal, "challenge");
     }
 
-    std::cout << "✅ Loaded config from " << path << std::endl;
+    Logger::success("Loaded config from {}", path.string());
     return true;
 
   } catch (const std::exception& e) {
-    std::cerr << "❌ Failed to parse TOML: " << e.what() << std::endl;
+    Logger::error("Failed to parse TOML: {}", e.what());
     return false;
   }
 }
@@ -262,21 +264,21 @@ void ConfigManager::initializePresets() {
 bool ConfigManager::applyPreset(const std::string& presetName) {
   auto it = presets_.find(presetName);
   if (it == presets_.end()) {
-    std::cerr << "❌ Unknown preset: " << presetName << std::endl;
-    std::cerr << "Available presets: ";
+    Logger::error("Unknown preset: {}", presetName);
+    fmt::print(stderr, "Available presets: ");
     bool first = true;
     for (const auto& [name, _] : presets_) {
       if (!first)
-        std::cerr << ", ";
-      std::cerr << name;
+        fmt::print(stderr, ", ");
+      fmt::print(stderr, "{}", name);
       first = false;
     }
-    std::cerr << std::endl;
+    fmt::print(stderr, "\n");
     return false;
   }
 
   it->second.apply(params_);
-  std::cout << "✅ Applied preset: " << presetName << " - " << it->second.description << std::endl;
+  Logger::success("Applied preset: {} - {}", presetName, it->second.description);
   return true;
 }
 
@@ -342,12 +344,12 @@ bool ConfigManager::setParameterInternal(const std::string& key, const std::stri
     else if (key == "challenge") {
       params_.challenge = std::stoi(value);
     } else {
-      std::cerr << "⚠️  Unknown parameter: " << key << std::endl;
+      Logger::warning("Unknown parameter: {}", key);
       return false;
     }
     return true;
   } catch (const std::exception& e) {
-    std::cerr << "❌ Invalid value for " << key << ": " << value << std::endl;
+    Logger::error("Invalid value for {}: {}", key, value);
     return false;
   }
 }
@@ -429,7 +431,7 @@ void ConfigManager::applyEnvironmentOverrides() {
       }
 
       if (setParameter(camelKey, value)) {
-        std::cout << "🌍 Environment override: " << envVars[i] << "=" << value << std::endl;
+        Logger::print("🌍 Environment override: {}={}", envVars[i], value);
       }
     }
   }
@@ -469,43 +471,43 @@ void ConfigManager::exportToFile(const std::string& path) const {
   file << "[challenge]\n";
   file << "challenge = " << params_.challenge << "\n";
 
-  std::cout << "✅ Configuration exported to " << path << std::endl;
+  Logger::success("Configuration exported to {}", path);
 }
 
 void ConfigManager::printConfig(bool showDefaults) const {
-  std::cout << "\n╔══════════════════════════════════════════╗\n";
-  std::cout << "║       Current Configuration              ║\n";
-  std::cout << "╚══════════════════════════════════════════╝\n\n";
+  fmt::print("\n╔══════════════════════════════════════════╗\n");
+  fmt::print("║       Current Configuration              ║\n");
+  fmt::print("╚══════════════════════════════════════════╝\n\n");
 
-  std::cout << "Simulation:\n";
-  std::cout << "  Grid: " << params_.gridSize_X << " × " << params_.gridSize_Y << "\n";
-  std::cout << "  Population: " << params_.population << "\n";
-  std::cout << "  Generations: " << params_.maxGenerations << "\n";
-  std::cout << "  Steps/Gen: " << params_.stepsPerGeneration << "\n\n";
+  fmt::print("Simulation:\n");
+  fmt::print("  Grid: {} × {}\n", params_.gridSize_X, params_.gridSize_Y);
+  fmt::print("  Population: {}\n", params_.population);
+  fmt::print("  Generations: {}\n", params_.maxGenerations);
+  fmt::print("  Steps/Gen: {}\n\n", params_.stepsPerGeneration);
 
-  std::cout << "Genome:\n";
-  std::cout << "  Initial length: " << params_.genomeInitialLengthMin << "-" << params_.genomeInitialLengthMax << "\n";
-  std::cout << "  Max length: " << params_.genomeMaxLength << "\n";
-  std::cout << "  Max neurons: " << params_.maxNumberNeurons << "\n\n";
+  fmt::print("Genome:\n");
+  fmt::print("  Initial length: {}-{}\n", params_.genomeInitialLengthMin, params_.genomeInitialLengthMax);
+  fmt::print("  Max length: {}\n", params_.genomeMaxLength);
+  fmt::print("  Max neurons: {}\n\n", params_.maxNumberNeurons);
 
-  std::cout << "Video:\n";
-  std::cout << "  Save video: " << (params_.saveVideo ? "Yes" : "No") << "\n";
+  fmt::print("Video:\n");
+  fmt::print("  Save video: {}\n", params_.saveVideo ? "Yes" : "No");
   if (params_.saveVideo) {
-    std::cout << "  Video stride: " << params_.videoStride << "\n";
-    std::cout << "  Save first: " << params_.videoSaveFirstFrames << " frames\n";
-    std::cout << "  Display scale: " << params_.displayScale << "x\n";
+    fmt::print("  Video stride: {}\n", params_.videoStride);
+    fmt::print("  Save first: {} frames\n", params_.videoSaveFirstFrames);
+    fmt::print("  Display scale: {}x\n", params_.displayScale);
   }
-  std::cout << "\n";
+  fmt::print("\n");
 
-  std::cout << "Performance:\n";
-  std::cout << "  Threads: " << (params_.numThreads == 0 ? "auto" : std::to_string(params_.numThreads)) << "\n\n";
+  fmt::print("Performance:\n");
+  fmt::print("  Threads: {}\n\n", params_.numThreads == 0 ? "auto" : std::to_string(params_.numThreads));
 
   if (loadedConfigPath_) {
-    std::cout << "📄 Loaded from: " << *loadedConfigPath_ << "\n";
+    fmt::print("📄 Loaded from: {}\n", *loadedConfigPath_);
   } else {
-    std::cout << "📄 Using default configuration\n";
+    fmt::print("📄 Using default configuration\n");
   }
-  std::cout << std::endl;
+  fmt::print("\n");
 }
 
 }  // namespace BioSim

@@ -10,6 +10,8 @@
 #include "imageWriter.h"
 #include "simulator.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <cmath>
 #include <iostream>
 
@@ -228,7 +230,7 @@ void endOfSimulationStep(unsigned simStep, unsigned generation) {
     // Attempt to save frame synchronously (may fail if imageWriter is busy)
     if (!imageWriter.saveVideoFrameSync(simStep, generation, parameterMngrSingleton.challenge,
                                         parameterMngrSingleton.barrierType)) {
-      std::cout << "imageWriter busy" << std::endl;  // Non-fatal warning
+      fmt::print("imageWriter busy\n");  // Non-fatal warning
     }
   }
 }

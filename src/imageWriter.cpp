@@ -15,6 +15,8 @@
 #include "renderBackend.h"
 #include "simulator.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <chrono>
 #include <condition_variable>
 #include <iomanip>
@@ -59,7 +61,7 @@ static std::unique_ptr<IRenderBackend> renderBackend = nullptr;
  */
 void saveOneFrameImmed(const ImageFrameData& data) {
   if (!renderBackend) {
-    std::cerr << "Error: Render backend not initialized!" << std::endl;
+    fmt::print(stderr, "Error: Render backend not initialized!\n");
     return;
   }
 
@@ -190,7 +192,7 @@ void ImageWriter::init(uint16_t layers, uint16_t sizeX, uint16_t sizeY) {
   if (renderBackend) {
     renderBackend->init(sizeX, sizeY, parameterMngrSingleton.displayScale, parameterMngrSingleton.agentSize);
   } else {
-    std::cerr << "Error: Failed to create render backend!" << std::endl;
+    fmt::print(stderr, "Error: Failed to create render backend!\n");
   }
   startNewGeneration();
 }
@@ -436,7 +438,7 @@ bool ImageWriter::saveVideoFrameSync(unsigned simStep, unsigned generation, unsi
  */
 void ImageWriter::saveGenerationVideo(unsigned generation) {
   if (!renderBackend) {
-    std::cerr << "Error: Render backend not initialized!" << std::endl;
+    fmt::print(stderr, "Error: Render backend not initialized!\n");
     return;
   }
 
@@ -448,14 +450,14 @@ void ImageWriter::saveGenerationVideo(unsigned generation) {
       imgDir += '/';
     }
 
-    std::cout << "Encoding " << frameCount << " frames for generation " << generation << std::endl;
+    fmt::print("Encoding {} frames for generation {}\n", frameCount, generation);
 
     bool success = renderBackend->saveVideo(generation, imgDir);
 
     if (success) {
-      std::cout << "Video saved successfully" << std::endl;
+      fmt::print("Video saved successfully\n");
     } else {
-      std::cerr << "Error: Failed to save video for generation " << generation << std::endl;
+      fmt::print(stderr, "Error: Failed to save video for generation {}\n", generation);
     }
   }
   startNewGeneration();
@@ -520,7 +522,7 @@ void ImageWriter::abort() {
  */
 void ImageWriter::saveFrameThread() {
   busy = false;  ///< we're ready for business
-  std::cout << "Imagewriter thread started." << std::endl;
+  fmt::print("Imagewriter thread started.\n");
 
   while (true) {
     /// wait for job on queue
@@ -537,10 +539,10 @@ void ImageWriter::saveFrameThread() {
     /// save image frame
     saveOneFrameImmed(imageWriter.data);
 
-    /// std::cout << "Image writer thread waiting..." << std::endl;
+    /// fmt::print("Image writer thread waiting...\n");
     /// std::this_thread::sleep_for(std::chrono::seconds(2));
   }
-  std::cout << "Image writer thread exiting." << std::endl;
+  fmt::print("Image writer thread exiting.\n");
 }
 
 }  // namespace BioSim

@@ -11,6 +11,8 @@
 
 #include "simulator.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <cassert>
 #include <cstring>
 #include <fstream>
@@ -327,15 +329,15 @@ std::string actionShortName(Action action) {
  */
 void printSensorsActions() {
   unsigned i;
-  std::cout << "Sensors:" << std::endl;
+  fmt::print("Sensors:\n");
   for (i = 0; i < Sensor::NUM_SENSES; ++i) {
-    std::cout << "  " << sensorName((Sensor)i) << std::endl;
+    fmt::print("  {}\n", sensorName((Sensor)i));
   }
-  std::cout << "Actions:" << std::endl;
+  fmt::print("Actions:\n");
   for (i = 0; i < Action::NUM_ACTIONS; ++i) {
-    std::cout << "  " << actionName((Action)i) << std::endl;
+    fmt::print("  {}\n", actionName((Action)i));
   }
-  std::cout << std::endl;
+  fmt::print("\n");
 }
 
 /**
@@ -357,19 +359,19 @@ void Individual::printGenome() const {
   unsigned count = 0;
   for (Gene gene : genome) {
     if (count == genesPerLine) {
-      std::cout << std::endl;
+      fmt::print("\n");
       count = 0;
     } else if (count != 0) {
-      std::cout << " ";
+      fmt::print(" ");
     }
 
     assert(sizeof(Gene) == 4);
     uint32_t n;
     std::memcpy(&n, &gene, sizeof(n));
-    std::cout << std::hex << std::setfill('0') << std::setw(8) << n;
+    fmt::print("{:08x}", n);
     ++count;
   }
-  std::cout << std::dec << std::endl;
+  fmt::print("\n");
 }
 
 /**
@@ -401,20 +403,20 @@ void Individual::printGenome() const {
 void Individual::printIGraphEdgeList() const {
   for (const auto& conn : nnet.connections) {
     if (conn.sourceType == SENSOR) {
-      std::cout << sensorShortName((Sensor)(conn.sourceNum));
+      fmt::print("{}", sensorShortName((Sensor)(conn.sourceNum)));
     } else {
-      std::cout << "N" << std::to_string(conn.sourceNum);
+      fmt::print("N{}", conn.sourceNum);
     }
 
-    std::cout << " ";
+    fmt::print(" ");
 
     if (conn.sinkType == ACTION) {
-      std::cout << actionShortName((Action)(conn.sinkNum));
+      fmt::print("{}", actionShortName((Action)(conn.sinkNum)));
     } else {
-      std::cout << "N" << std::to_string(conn.sinkNum);
+      fmt::print("N{}", conn.sinkNum);
     }
 
-    std::cout << " " << std::to_string(conn.weight) << std::endl;
+    fmt::print(" {}\n", conn.weight);
   }
 }
 
@@ -513,10 +515,11 @@ void displaySignalUse() {
       }
     }
   }
-  std::cout << "Signal spread "
-            << ((double)count / (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y))
-            << "%, average " << ((double)sum / (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y))
-            << std::endl;
+  double spreadPercent =
+      static_cast<double>(count) / (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y) * 100.0;
+  double averageSignal =
+      static_cast<double>(sum) / (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y);
+  fmt::print("Signal spread {:.2f}%, average {:.2f}\n", spreadPercent, averageSignal);
 }
 
 /**
@@ -562,16 +565,16 @@ void displaySensorActionReferenceCounts() {
     }
   }
 
-  std::cout << "Sensors in use:" << std::endl;
+  fmt::print("Sensors in use:\n");
   for (unsigned i = 0; i < sensorCounts.size(); ++i) {
     if (sensorCounts[i] > 0) {
-      std::cout << "  " << sensorCounts[i] << " - " << sensorName((Sensor)i) << std::endl;
+      fmt::print("  {} - {}\n", sensorCounts[i], sensorName((Sensor)i));
     }
   }
-  std::cout << "Actions in use:" << std::endl;
+  fmt::print("Actions in use:\n");
   for (unsigned i = 0; i < actionCounts.size(); ++i) {
     if (actionCounts[i] > 0) {
-      std::cout << "  " << actionCounts[i] << " - " << actionName((Action)i) << std::endl;
+      fmt::print("  {} - {}\n", actionCounts[i], actionName((Action)i));
     }
   }
 }
@@ -606,14 +609,14 @@ void displaySampleGenomes(unsigned count) {
   unsigned index = 1;  ///< indexes start at 1
   for (index = 1; count > 0 && index <= parameterMngrSingleton.population; ++index) {
     if (peeps[index].alive) {
-      std::cout << "---------------------------\nIndividual ID " << index << std::endl;
+      fmt::print("---------------------------\nIndividual ID {}\n", index);
       peeps[index].printGenome();
-      std::cout << std::endl;
+      fmt::print("\n");
 
       /// peeps[index].printNeuralNet();
       peeps[index].printIGraphEdgeList();
 
-      std::cout << "---------------------------" << std::endl;
+      fmt::print("---------------------------\n");
       --count;
     }
   }

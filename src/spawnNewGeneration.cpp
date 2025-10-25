@@ -11,6 +11,8 @@
 
 #include "simulator.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <algorithm>
 #include <cassert>
 #include <fstream>
@@ -203,15 +205,14 @@ unsigned spawnNewGeneration(unsigned generation, unsigned murderCount) {
             }
           }
         }
-        std::cout << parents.size() << " passed, " << sacrificesIndexes.size() << " sacrificed, " << survivingKin.size()
-                  << " saved" << std::endl;
+        fmt::print("{} passed, {} sacrificed, {} saved\n", parents.size(), sacrificesIndexes.size(),
+                   survivingKin.size());
         parents = std::move(survivingKin);
       }
     } else {
       // Limit the parent list based on sacrifice count
       unsigned numberSaved = sacrificedCount * altruismFactor;
-      std::cout << parents.size() << " passed, " << sacrificedCount << " sacrificed, " << numberSaved << " saved"
-                << std::endl;
+      fmt::print("{} passed, {} sacrificed, {} saved\n", parents.size(), sacrificedCount, numberSaved);
       if (!parents.empty() && numberSaved < parents.size()) {
         parents.erase(parents.begin() + numberSaved, parents.end());
       }
@@ -230,7 +231,7 @@ unsigned spawnNewGeneration(unsigned generation, unsigned murderCount) {
     parentGenomes.push_back(peeps[parent.first].genome);
   }
 
-  std::cout << "Gen " << generation << ", " << parentGenomes.size() << " survivors" << std::endl;
+  fmt::print("Gen {}, {} survivors\n", generation, parentGenomes.size());
   appendEpochLog(generation, parentGenomes.size(), murderCount);
   // displaySignalUse(); // Uncomment for debugging signal layer usage
 

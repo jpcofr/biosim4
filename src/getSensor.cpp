@@ -10,6 +10,8 @@
 
 #include "simulator.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -384,7 +386,7 @@ float Individual::getSensor(Sensor sensorNum, unsigned simStep) const {
   }
 
   if (std::isnan(sensorVal) || sensorVal < -0.01 || sensorVal > 1.01) {
-    std::cout << "sensorVal=" << (int)sensorVal << " for " << sensorName((Sensor)sensorNum) << std::endl;
+    fmt::print("sensorVal={} for {}\n", static_cast<int>(sensorVal), sensorName((Sensor)sensorNum));
     sensorVal = std::max(0.0f, std::min(sensorVal, 1.0f));  ///< clip
   }
 

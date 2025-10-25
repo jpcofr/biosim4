@@ -12,9 +12,11 @@
 
 #include "CLI/CLI.hpp"
 #include "configManager.h"
+#include "logger.h"
 #include "videoVerifier.h"
 
-#include <iostream>
+#include <spdlog/fmt/fmt.h>
+
 #include <map>
 #include <string>
 
@@ -26,10 +28,10 @@ void simulator(const Params& params);
  * @brief Display available configuration presets
  */
 void showPresets(BioSim::ConfigManager& config) {
-  std::cout << "\n📋 Available Presets:\n\n";
+  fmt::print("\n📋 Available Presets:\n\n");
   for (const auto& preset : config.getAvailablePresets()) {
-    std::cout << "  • " << preset << "\n";
-    std::cout << "    " << config.getPresetDescription(preset) << "\n\n";
+    fmt::print("  • {}\n", preset);
+    fmt::print("    {}\n\n", config.getPresetDescription(preset));
   }
 }
 
@@ -49,7 +51,7 @@ int main(int argc, char** argv) {
 
   // Configuration options
   std::string configFile;
-  app.add_option("-c,--config", configFile, "Config file path (TOML or INI)")->check(CLI::ExistingFile);
+  app.add_option("-c,--config", configFile, "Config file path (TOML)")->check(CLI::ExistingFile);
 
   std::string preset;
   app.add_option("-p,--preset", preset, "Use configuration preset");
@@ -95,7 +97,7 @@ int main(int argc, char** argv) {
 
   // Handle video verification mode
   if (verifyVideos) {
-    std::cout << "🔍 Verifying video generation...\n";
+    BioSim::Logger::print("🔍 Verifying video generation...");
     auto result = BioSim::VideoVerifier::verify(videoDir, 5, true);  // Default: check 5 videos
     return result.success ? 0 : 1;
   }
@@ -113,12 +115,12 @@ int main(int argc, char** argv) {
     if (pos != std::string::npos) {
       overrideMap[override.substr(0, pos)] = override.substr(pos + 1);
     } else {
-      std::cerr << "⚠️  Invalid override format: " << override << " (expected key=value)\n";
+      BioSim::Logger::warning("Invalid override format: {} (expected key=value)", override);
     }
   }
 
   if (!config.load(configFile, overrideMap)) {
-    std::cerr << "❌ Failed to load configuration\n";
+    BioSim::Logger::error("Failed to load configuration");
     return 1;
   }
 
@@ -141,32 +143,42 @@ int main(int argc, char** argv) {
       config.exportToFile(exportPath);
       return 0;
     } catch (const std::exception& e) {
-      std::cerr << "❌ Export failed: " << e.what() << "\n";
+      BioSim::Logger::error("Export failed: {}", e.what());
       return 1;
     }
   }
 
-  // Print configuration summary
-  std::cout << "\n🧬 BioSim4 Starting...\n";
+  // Initialize logging system
+  const auto& params = config.getParams();
+  BioSim::Logger::init(params.logDir + "/biosim4.log", spdlog::level::info);
+  BioSim::Logger::info("=== BioSim4 Session Start ===");
+  BioSim::Logger::info("Configuration: grid={}x{}, population={}, generations={}", params.gridSize_X, params.gridSize_Y,
+                       params.population, params.maxGenerations);
+
+  // Print configuration summary to console
+  BioSim::Logger::header("\n🧬 BioSim4 Starting...");
   config.printConfig(false);
 
   // Run simulation
   try {
     BioSim::simulator(config.getParams());
   } catch (const std::exception& e) {
-    std::cerr << "\n❌ Simulation failed: " << e.what() << "\n";
+    BioSim::Logger::error("\nSimulation failed: {}", e.what());
+    BioSim::Logger::log_error("Simulation failed with exception: {}", e.what());
+    BioSim::Logger::shutdown();
     return 1;
   }
 
   // Post-simulation: Offer video verification
-  const auto& params = config.getParams();
   if (params.saveVideo) {
-    std::cout << "\n🎬 Videos saved to " << videoDir << "/\n";
-    std::cout << "\nTo verify videos, run:\n";
-    std::cout << "  ./biosim4 --verify-videos\n";
-    std::cout << "  ./biosim4 --review-videos\n";
+    fmt::print("\n🎬 Videos saved to {}/\n", videoDir);
+    fmt::print("\nTo verify videos, run:\n");
+    fmt::print("  ./biosim4 --verify-videos\n");
+    fmt::print("  ./biosim4 --review-videos\n");
   }
 
-  std::cout << "\n✅ Simulation complete!\n";
+  BioSim::Logger::success("\nSimulation complete!");
+  BioSim::Logger::info("=== BioSim4 Session End ===");
+  BioSim::Logger::shutdown();
   return 0;
 }

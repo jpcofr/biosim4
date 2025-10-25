@@ -5,6 +5,8 @@
 
 #include "videoVerifier.h"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iomanip>
@@ -135,44 +137,43 @@ int VideoVerifier::extractGenerationNumber(const std::filesystem::path& path) {
 }
 
 void VideoVerifier::printReport(const VideoVerificationResult& result) {
-  std::cout << "\n╔══════════════════════════════════════════╗\n";
-  std::cout << "║      Video Generation Report             ║\n";
-  std::cout << "╚══════════════════════════════════════════╝\n\n";
+  fmt::print("\n╔══════════════════════════════════════════╗\n");
+  fmt::print("║      Video Generation Report             ║\n");
+  fmt::print("╚══════════════════════════════════════════╝\n\n");
 
-  std::cout << result.summary << "\n\n";
+  fmt::print("{}\n\n", result.summary);
 
   if (!result.foundVideos.empty()) {
-    std::cout << "📹 Found Videos:\n";
-    std::cout << "┌────────────┬──────────────────────────────────────────┬────────────┐\n";
-    std::cout << "│ Generation │ Filename                                 │ Size       │\n";
-    std::cout << "├────────────┼──────────────────────────────────────────┼────────────┤\n";
+    fmt::print("📹 Found Videos:\n");
+    fmt::print("┌────────────┬──────────────────────────────────────────┬────────────┐\n");
+    fmt::print("│ Generation │ Filename                                 │ Size       │\n");
+    fmt::print("├────────────┼──────────────────────────────────────────┼────────────┤\n");
 
     for (const auto& video : result.foundVideos) {
-      std::cout << "│ " << std::setw(10)
-                << (video.generationNumber >= 0 ? std::to_string(video.generationNumber) : "unknown") << " │ "
-                << std::setw(40) << std::left << video.path.filename().string() << " │ " << std::setw(10) << std::right
-                << video.formattedSize << " │\n";
+      fmt::print("│ {:>10} │ {:<40} │ {:>10} │\n",
+                 (video.generationNumber >= 0 ? std::to_string(video.generationNumber) : "unknown"),
+                 video.path.filename().string(), video.formattedSize);
     }
 
-    std::cout << "└────────────┴──────────────────────────────────────────┴────────────┘\n";
+    fmt::print("└────────────┴──────────────────────────────────────────┴────────────┘\n");
   }
 
   if (!result.missingGenerations.empty()) {
-    std::cout << "\n❌ Missing generations: ";
+    fmt::print("\n❌ Missing generations: ");
     for (size_t i = 0; i < result.missingGenerations.size(); ++i) {
       if (i > 0)
-        std::cout << ", ";
-      std::cout << result.missingGenerations[i];
+        fmt::print(", ");
+      fmt::print("{}", result.missingGenerations[i]);
     }
-    std::cout << "\n";
+    fmt::print("\n");
   }
 
-  std::cout << "\n";
+  fmt::print("\n");
 }
 
 bool VideoVerifier::openVideoInPlayer(const std::filesystem::path& videoPath) {
   if (!std::filesystem::exists(videoPath)) {
-    std::cerr << "❌ Video not found: " << videoPath << std::endl;
+    fmt::print(stderr, "❌ Video not found: {}\n", videoPath.string());
     return false;
   }
 
@@ -186,10 +187,10 @@ bool VideoVerifier::openVideoInPlayer(const std::filesystem::path& videoPath) {
 
   int result = std::system(command.c_str());
   if (result == 0) {
-    std::cout << "🎬 Opened: " << videoPath.filename() << std::endl;
+    fmt::print("🎬 Opened: {}\n", videoPath.filename().string());
     return true;
   } else {
-    std::cerr << "❌ Failed to open video player" << std::endl;
+    fmt::print(stderr, "❌ Failed to open video player\n");
     return false;
   }
 }
@@ -198,43 +199,43 @@ void VideoVerifier::interactiveReview(const std::string& outputDir) {
   auto videos = listVideos(outputDir);
 
   if (videos.empty()) {
-    std::cout << "❌ No videos found in " << outputDir << std::endl;
+    fmt::print("❌ No videos found in {}\n", outputDir);
     return;
   }
 
-  std::cout << "\n╔══════════════════════════════════════════╗\n";
-  std::cout << "║     Interactive Video Review             ║\n";
-  std::cout << "╚══════════════════════════════════════════╝\n\n";
+  fmt::print("\n╔══════════════════════════════════════════╗\n");
+  fmt::print("║     Interactive Video Review             ║\n");
+  fmt::print("╚══════════════════════════════════════════╝\n\n");
 
-  std::cout << "Found " << videos.size() << " video(s)\n\n";
+  fmt::print("Found {} video(s)\n\n", videos.size());
 
   for (size_t i = 0; i < videos.size(); ++i) {
     const auto& video = videos[i];
-    std::cout << "[" << (i + 1) << "] Generation " << video.generationNumber << " - " << video.path.filename().string()
-              << " (" << video.formattedSize << ")\n";
+    fmt::print("[{}] Generation {} - {} ({})\n", (i + 1), video.generationNumber, video.path.filename().string(),
+               video.formattedSize);
   }
 
-  std::cout << "\nCommands:\n";
-  std::cout << "  1-" << videos.size() << "  : Open video in player\n";
-  std::cout << "  a     : Open all videos\n";
-  std::cout << "  q     : Quit\n";
-  std::cout << "\n";
+  fmt::print("\nCommands:\n");
+  fmt::print("  1-{}  : Open video in player\n", videos.size());
+  fmt::print("  a     : Open all videos\n");
+  fmt::print("  q     : Quit\n");
+  fmt::print("\n");
 
   std::string input;
   while (true) {
-    std::cout << "Choice > ";
+    fmt::print("Choice > ");
     std::getline(std::cin, input);
 
     if (input.empty())
       continue;
 
     if (input == "q" || input == "quit" || input == "exit") {
-      std::cout << "👋 Goodbye!\n";
+      fmt::print("👋 Goodbye!\n");
       break;
     }
 
     if (input == "a" || input == "all") {
-      std::cout << "🎬 Opening all videos...\n";
+      fmt::print("🎬 Opening all videos...\n");
       for (const auto& video : videos) {
         openVideoInPlayer(video.path);
       }
@@ -246,10 +247,10 @@ void VideoVerifier::interactiveReview(const std::string& outputDir) {
       if (choice >= 1 && choice <= static_cast<int>(videos.size())) {
         openVideoInPlayer(videos[choice - 1].path);
       } else {
-        std::cout << "❌ Invalid choice. Enter 1-" << videos.size() << "\n";
+        fmt::print("❌ Invalid choice. Enter 1-{}\n", videos.size());
       }
     } catch (...) {
-      std::cout << "❌ Invalid input. Try again.\n";
+      fmt::print("❌ Invalid input. Try again.\n");
     }
   }
 }
