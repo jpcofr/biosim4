@@ -1,9 +1,17 @@
 #!/bin/bash
-# Selective build cleanup - preserves OpenCV and Google Test artifacts
-# This prevents the need to rebuild OpenCV from source (30-60 min)
-# and avoids re-downloading Google Test
+# Selective build cleanup - preserves FetchContent dependency artifacts
+# This prevents the need to re-download and rebuild dependencies:
+# - googletest, toml11, cli11, raylib, spdlog (includes fmt)
+# Without preservation, CMake would re-fetch these on every clean build
 
 set -e  # Exit on error
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
 BUILD_DIR="./build"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,16 +20,16 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 if [ ! -d "$BUILD_DIR" ]; then
-    echo "Build directory does not exist. Nothing to clean."
+    echo -e "${YELLOW}Build directory does not exist. Nothing to clean.${NC}"
     exit 0
 fi
 
-echo "Cleaning build directory (preserving OpenCV and Google Test artifacts)..."
+echo -e "${BLUE}Cleaning build directory (preserving FetchContent dependencies)...${NC}"
 
 cd "$BUILD_DIR"
 
 # Remove CMake cache and configuration files
-echo "  - Removing CMake cache files..."
+echo -e "  ${CYAN}•${NC} Removing CMake cache files..."
 rm -f CMakeCache.txt
 rm -f cmake_install.cmake
 rm -f CPackConfig.cmake
@@ -30,44 +38,52 @@ rm -f CTestTestfile.cmake
 rm -f DartConfiguration.tcl
 
 # Remove build system files
-echo "  - Removing build system files..."
+echo -e "  ${CYAN}•${NC} Removing build system files..."
 rm -f Makefile
 rm -f build.ninja
 rm -f rules.ninja
 rm -f install_manifest.txt
 
-# Remove all CMakeFiles EXCEPT OpenCV and Google Test related ones
-echo "  - Cleaning CMakeFiles (preserving OpenCV and Google Test)..."
+# Remove all CMakeFiles EXCEPT dependency-related ones
+echo -e "  ${CYAN}•${NC} Cleaning CMakeFiles (preserving dependencies)..."
 if [ -d "CMakeFiles" ]; then
-    find CMakeFiles -mindepth 1 -maxdepth 1 ! -name '*opencv*' ! -name '*googletest*' -exec rm -rf {} + 2>/dev/null || true
+    find CMakeFiles -mindepth 1 -maxdepth 1 \
+      ! -name '*googletest*' \
+      ! -name '*toml11*' \
+      ! -name '*cli11*' \
+      ! -name '*raylib*' \
+      ! -name '*spdlog*' \
+      -exec rm -rf {} + 2>/dev/null || true
 fi
 
-# Remove biosim4 build artifacts
-echo "  - Removing biosim4 build artifacts..."
+# Remove biosim4 build artifacts (not dependencies)
+echo -e "  ${CYAN}•${NC} Removing biosim4 build artifacts..."
 rm -rf src/
+rm -rf tests/
+
+# Remove bin/ and lib/ directories (will be regenerated)
+echo -e "  ${CYAN}•${NC} Removing bin/ and lib/ directories..."
+rm -rf bin/
+rm -rf lib/
 
 # Remove Testing directory (can be regenerated)
-echo "  - Removing Testing directory..."
+echo -e "  ${CYAN}•${NC} Removing Testing directory..."
 rm -rf Testing/
 
 echo ""
-echo "✓ Build directory cleaned successfully!"
+echo -e "${GREEN}✓ Build directory cleaned successfully!${NC}"
 echo ""
-echo "Preserved artifacts:"
-if [ -d "_deps/opencv-src" ] || [ -d "_deps/opencv-build" ] || [ -d "_deps/opencv-subbuild" ]; then
-    echo "OpenCV artifacts:"
-    [ -d "_deps/opencv-src" ] && echo "  - _deps/opencv-src/"
-    [ -d "_deps/opencv-build" ] && echo "  - _deps/opencv-build/"
-    [ -d "_deps/opencv-subbuild" ] && echo "  - _deps/opencv-subbuild/"
-fi
-if [ -d "_deps/googletest-src" ] || [ -d "_deps/googletest-build" ] || [ -d "_deps/googletest-subbuild" ]; then
-    echo "Google Test artifacts:"
-    [ -d "_deps/googletest-src" ] && echo "  - _deps/googletest-src/"
-    [ -d "_deps/googletest-build" ] && echo "  - _deps/googletest-build/"
-    [ -d "_deps/googletest-subbuild" ] && echo "  - _deps/googletest-subbuild/"
-fi
+echo -e "${BLUE}Preserved FetchContent dependencies (_deps/):${NC}"
+
+# List preserved dependencies (fmt is bundled with spdlog)
+for dep in googletest toml11 cli11 raylib spdlog; do
+  if [ -d "_deps/${dep}-src" ]; then
+    echo -e "  ${GREEN}✓${NC} ${dep}"
+  fi
+done
+
 echo ""
-echo "To rebuild, run:"
+echo -e "${YELLOW}To rebuild, run:${NC}"
 echo "  cd build"
 echo "  cmake -G Ninja .."
 echo "  ninja"
