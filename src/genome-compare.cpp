@@ -1,17 +1,16 @@
 // genome-compare.cpp -- compute similarity of two genomes
 
-#include <cassert>
-
 #include "simulator.h"
+
+#include <cassert>
 
 namespace BioSim {
 
 // Approximate gene match: Has to match same source, sink, with similar weight
 //
-bool genesMatch(const Gene &g1, const Gene &g2) {
-  return g1.sinkNum == g2.sinkNum && g1.sourceNum == g2.sourceNum &&
-         g1.sinkType == g2.sinkType && g1.sourceType == g2.sourceType &&
-         g1.weight == g2.weight;
+bool genesMatch(const Gene& g1, const Gene& g2) {
+  return g1.sinkNum == g2.sinkNum && g1.sourceNum == g2.sourceNum && g1.sinkType == g2.sinkType &&
+         g1.sourceType == g2.sourceType && g1.weight == g2.weight;
 }
 
 // The jaro_winkler_distance() function is adapted from the C version at
@@ -21,13 +20,13 @@ bool genesMatch(const Gene &g1, const Gene &g2) {
 // to relocate to different offsets in the genome. I.e., this function is
 // tolerant of gaps, relocations, and genomes of unequal lengths.
 //
-float jaro_winkler_distance(const Genome &genome1, const Genome &genome2) {
+float jaro_winkler_distance(const Genome& genome1, const Genome& genome2) {
   float dw;
   auto max = [](int a, int b) { return a > b ? a : b; };
   auto min = [](int a, int b) { return a < b ? a : b; };
 
-  const auto &s = genome1;
-  const auto &a = genome2;
+  const auto& s = genome1;
+  const auto& a = genome2;
 
   int i, j, l;
   int m = 0, t = 0;
@@ -43,7 +42,8 @@ float jaro_winkler_distance(const Genome &genome1, const Genome &genome2) {
   std::vector<int> aflags(al, 0);
   int range = max(0, max(sl, al) / 2 - 1);
 
-  if (!sl || !al) return 0.0;
+  if (!sl || !al)
+    return 0.0;
 
   /* calculate matching characters */
   for (i = 0; i < al; i++) {
@@ -57,7 +57,8 @@ float jaro_winkler_distance(const Genome &genome1, const Genome &genome2) {
     }
   }
 
-  if (!m) return 0.0;
+  if (!m)
+    return 0.0;
 
   /* calculate character transpositions */
   l = 0;
@@ -69,7 +70,8 @@ float jaro_winkler_distance(const Genome &genome1, const Genome &genome2) {
           break;
         }
       }
-      if (!genesMatch(a[i], s[j])) t++;
+      if (!genesMatch(a[i], s[j]))
+        t++;
     }
   }
   t /= 2;
@@ -80,11 +82,11 @@ float jaro_winkler_distance(const Genome &genome1, const Genome &genome2) {
 }
 
 // Works only for genomes of equal length
-float hammingDistanceBits(const Genome &genome1, const Genome &genome2) {
+float hammingDistanceBits(const Genome& genome1, const Genome& genome2) {
   assert(genome1.size() == genome2.size());
 
-  const unsigned int *p1 = (const unsigned int *)genome1.data();
-  const unsigned int *p2 = (const unsigned int *)genome2.data();
+  const unsigned int* p1 = (const unsigned int*)genome1.data();
+  const unsigned int* p2 = (const unsigned int*)genome2.data();
   const unsigned numElements = genome1.size();
   const unsigned bytesPerElement = sizeof(genome1[0]);
   const unsigned lengthBytes = numElements * bytesPerElement;
@@ -103,11 +105,11 @@ float hammingDistanceBits(const Genome &genome1, const Genome &genome2) {
 }
 
 // Works only for genomes of equal length
-float hammingDistanceBytes(const Genome &genome1, const Genome &genome2) {
+float hammingDistanceBytes(const Genome& genome1, const Genome& genome2) {
   assert(genome1.size() == genome2.size());
 
-  const unsigned int *p1 = (const unsigned int *)genome1.data();
-  const unsigned int *p2 = (const unsigned int *)genome2.data();
+  const unsigned int* p1 = (const unsigned int*)genome1.data();
+  const unsigned int* p2 = (const unsigned int*)genome2.data();
   const unsigned numElements = genome1.size();
   const unsigned bytesPerElement = sizeof(genome1[0]);
   const unsigned lengthBytes = numElements * bytesPerElement;
@@ -123,7 +125,7 @@ float hammingDistanceBytes(const Genome &genome1, const Genome &genome2) {
 // Returns 0.0..1.0
 //
 // TODO optimize by approximation for long genomes
-float genomeSimilarity(const Genome &g1, const Genome &g2) {
+float genomeSimilarity(const Genome& g1, const Genome& g2) {
   switch (parameterMngrSingleton.genomeComparisonMethod) {
     case 0:
       return jaro_winkler_distance(g1, g2);
@@ -144,18 +146,15 @@ float geneticDiversity() {
   }
 
   // count limits the number of genomes sampled for performance reasons.
-  unsigned count = std::min(
-      1000U,
-      parameterMngrSingleton.population);  // TODO p.analysisSampleSize;
+  unsigned count = std::min(1000U,
+                            parameterMngrSingleton.population);  // TODO p.analysisSampleSize;
   int numSamples = 0;
   float similaritySum = 0.0f;
 
   while (count > 0) {
-    unsigned index0 = randomUint(1, parameterMngrSingleton.population -
-                                        1);  // skip first and last elements
+    unsigned index0 = randomUint(1, parameterMngrSingleton.population - 1);  // skip first and last elements
     unsigned index1 = index0 + 1;
-    similaritySum +=
-        genomeSimilarity(peeps[index0].genome, peeps[index1].genome);
+    similaritySum += genomeSimilarity(peeps[index0].genome, peeps[index1].genome);
     --count;
     ++numSamples;
   }

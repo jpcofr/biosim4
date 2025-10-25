@@ -1,0 +1,42 @@
+---
+# BioSim4 C++ Formatting Configuration
+# Based on Google style with project-specific customizations
+BasedOnStyle: Google
+IndentWidth: 2
+ColumnLimit: 120
+
+# Additional settings for consistency
+Language: Cpp
+Standard: c++20
+
+# Pointer and reference alignment
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Namespace indentation
+NamespaceIndentation: None
+
+# Include sorting
+SortIncludes: CaseInsensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Project headers
+  - Regex:           '^"'
+    Priority:        1
+  # System headers
+  - Regex:           '^<.*\.h>'
+    Priority:        2
+  # C++ standard library
+  - Regex:           '^<.*'
+    Priority:        3
+
+# Function and control statement formatting
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Braces
+BreakBeforeBraces: Attach
+
+# Comments
+ReflowComments: true

@@ -1,18 +1,18 @@
-#ifndef IMAGEWRITER_H_INCLUDED
-#define IMAGEWRITER_H_INCLUDED
+#ifndef BIOSIM_IMAGEWRITER_H_INCLUDED
+#define BIOSIM_IMAGEWRITER_H_INCLUDED
 
 // Creates a graphic frame for each simStep, then
 // assembles them into a video at the end of a generation.
+
+#include "indiv.h"
+#include "params.h"
+#include "peeps.h"
 
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <vector>
-
-#include "indiv.h"
-#include "params.h"
-#include "peeps.h"
 
 namespace BioSim {
 
@@ -28,17 +28,15 @@ struct ImageFrameData {
   std::vector<uint8_t> indivColors;
   std::vector<Coordinate> barrierLocs;
   typedef std::vector<std::vector<uint8_t>> SignalLayer;  // [x][y]
-  std::vector<SignalLayer> signalLayers; // [layer][x][y]
+  std::vector<SignalLayer> signalLayers;                  // [layer][x][y]
 };
 
 struct ImageWriter {
   ImageWriter();
   void init(uint16_t layers, uint16_t sizeX, uint16_t sizeY);
   void startNewGeneration();
-  bool saveVideoFrame(unsigned simStep, unsigned generation, unsigned challenge,
-                      unsigned barrierType);
-  bool saveVideoFrameSync(unsigned simStep, unsigned generation,
-                          unsigned challenge, unsigned barrierType);
+  bool saveVideoFrame(unsigned simStep, unsigned generation, unsigned challenge, unsigned barrierType);
+  bool saveVideoFrameSync(unsigned simStep, unsigned generation, unsigned challenge, unsigned barrierType);
   void saveGenerationVideo(unsigned generation);
   void abort();
   void saveFrameThread();  // runs in a thread
@@ -59,4 +57,4 @@ extern ImageWriter imageWriter;
 
 }  // namespace BioSim
 
-#endif  // IMAGEWRITER_H_INCLUDED
+#endif  // BIOSIM_IMAGEWRITER_H_INCLUDED

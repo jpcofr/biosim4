@@ -1,5 +1,5 @@
-#ifndef BASICTYPES_H_INCLUDED
-#define BASICTYPES_H_INCLUDED
+#ifndef BIOSIM4_INCLUDE_BASICTYPES_H_
+#define BIOSIM4_INCLUDE_BASICTYPES_H_
 
 /*
 Basic types used throughout the project:
@@ -49,11 +49,11 @@ Arithmetic
     Polar = Polar * Polar (dot product)
 */
 
+#include "random.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-
-#include "random.h"
 
 namespace BioSim {
 
@@ -99,29 +99,20 @@ struct __attribute__((packed)) Coordinate {
   Coordinate(int16_t x0 = 0, int16_t y0 = 0) : x{x0}, y{y0} {}
   bool isNormalized() const { return x >= -1 && x <= 1 && y >= -1 && y <= 1; }
   Coordinate normalize() const;
-  unsigned length() const {
-    return (int)(std::sqrt(x * x + y * y));
-  }  // round down
+  unsigned length() const { return (int)(std::sqrt(x * x + y * y)); }  // round down
   Dir asDir() const;
   Polar asPolar() const;
 
   bool operator==(Coordinate c) const { return x == c.x && y == c.y; }
   bool operator!=(Coordinate c) const { return x != c.x || y != c.y; }
-  Coordinate operator+(Coordinate c) const {
-    return Coordinate{(int16_t)(x + c.x), (int16_t)(y + c.y)};
-  }
-  Coordinate operator-(Coordinate c) const {
-    return Coordinate{(int16_t)(x - c.x), (int16_t)(y - c.y)};
-  }
-  Coordinate operator*(int a) const {
-    return Coordinate{(int16_t)(x * a), (int16_t)(y * a)};
-  }
+  Coordinate operator+(Coordinate c) const { return Coordinate{(int16_t)(x + c.x), (int16_t)(y + c.y)}; }
+  Coordinate operator-(Coordinate c) const { return Coordinate{(int16_t)(x - c.x), (int16_t)(y - c.y)}; }
+  Coordinate operator*(int a) const { return Coordinate{(int16_t)(x * a), (int16_t)(y * a)}; }
   Coordinate operator+(Dir d) const { return *this + d.asNormalizedCoord(); }
   Coordinate operator-(Dir d) const { return *this - d.asNormalizedCoord(); }
 
-  float raySameness(
-      Coordinate other) const;     // returns -1.0 (opposite) .. 1.0 (same)
-  float raySameness(Dir d) const;  // returns -1.0 (opposite) .. 1.0 (same)
+  float raySameness(Coordinate other) const;  // returns -1.0 (opposite) .. 1.0 (same)
+  float raySameness(Dir d) const;             // returns -1.0 (opposite) .. 1.0 (same)
  public:
   int16_t x;
   int16_t y;
@@ -130,8 +121,7 @@ struct __attribute__((packed)) Coordinate {
 // Polar magnitudes are signed 32-bit integers so that they can extend across
 // any 2D area defined by the Coord class.
 struct __attribute__((packed)) Polar {
-  explicit Polar(int mag0 = 0, Compass dir0 = Compass::CENTER)
-      : mag{mag0}, dir{Dir{dir0}} {}
+  explicit Polar(int mag0 = 0, Compass dir0 = Compass::CENTER) : mag{mag0}, dir{Dir{dir0}} {}
   explicit Polar(int mag0, Dir dir0) : mag{mag0}, dir{dir0} {}
   Coordinate asCoord() const;
 
@@ -142,4 +132,4 @@ struct __attribute__((packed)) Polar {
 
 }  // namespace BioSim
 
-#endif  // BASICTYPES_H_INCLUDED
+#endif  // BIOSIM4_INCLUDE_BASICTYPES_H_

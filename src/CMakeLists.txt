@@ -3,7 +3,7 @@ FILE(GLOB MyCppSources ./*.cpp)
 FILE(GLOB MyCppheaders ./*.h)
 
 # Exclude old unit test files - now handled by tests/ directory
-list(REMOVE_ITEM MyCppSources 
+list(REMOVE_ITEM MyCppSources
   "${CMAKE_CURRENT_SOURCE_DIR}/unitTestBasicTypes.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/unitTestConnectNeuralNetWiringFromGenome.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/unitTestGridVisitNeighborhood.cpp"
@@ -36,5 +36,3 @@ install(TARGETS biosim4 DESTINATION bin)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
-
-

@@ -1,14 +1,14 @@
 // executeActions.cpp -- Executes the actions computed for a single simStep for
 // a specified individual
 
+#include "omp.h"
+#include "simulator.h"
+
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <iostream>
-
-#include "omp.h"
-#include "simulator.h"
 
 namespace BioSim {
 
@@ -63,21 +63,18 @@ of the simulator step by endOfSimStep() in a single thread after all individuals
 have been evaluated multithreadedly.
 **********************************************************************************/
 
-void executeActions(Individual &indiv,
-                    std::array<float, Action::NUM_ACTIONS> &actionLevels) {
+void executeActions(Individual& indiv, std::array<float, Action::NUM_ACTIONS>& actionLevels) {
   // Only a subset of all possible actions might be enabled (i.e., compiled in).
   // This returns true if the specified action is enabled. See sensors-actions.h
   // for how to enable sensors and actions during compilation.
-  auto isEnabled = [](enum Action action) {
-    return (int)action < (int)Action::NUM_ACTIONS;
-  };
+  auto isEnabled = [](enum Action action) { return (int)action < (int)Action::NUM_ACTIONS; };
 
   // Responsiveness action - convert neuron action level from arbitrary float
   // range to the range 0.0..1.0. If this action neuron is enabled but not
   // driven, will default to mid-level 0.5.
   if (isEnabled(Action::SET_RESPONSIVENESS)) {
     float level = actionLevels[Action::SET_RESPONSIVENESS];  // default 0.0
-    level = (std::tanh(level) + 1.0) / 2.0;  // convert to 0.0..1.0
+    level = (std::tanh(level) + 1.0) / 2.0;                  // convert to 0.0..1.0
     indiv.responsiveness = level;
   }
 
@@ -90,8 +87,7 @@ void executeActions(Individual &indiv,
   // will default to 1.5 + e^(3.5) = a period of 34 simSteps.
   if (isEnabled(Action::SET_OSCILLATOR_PERIOD)) {
     auto periodf = actionLevels[Action::SET_OSCILLATOR_PERIOD];
-    float newPeriodf01 =
-        (std::tanh(periodf) + 1.0) / 2.0;  // convert to 0.0..1.0
+    float newPeriodf01 = (std::tanh(periodf) + 1.0) / 2.0;  // convert to 0.0..1.0
     unsigned newPeriod = 1 + (int)(1.5 + std::exp(7.0 * newPeriodf01));
     assert(newPeriod >= 2 && newPeriod <= 2048);
     indiv.oscPeriod = newPeriod;
@@ -132,11 +128,10 @@ void executeActions(Individual &indiv,
     float level = actionLevels[Action::KILL_FORWARD];
     level = (std::tanh(level) + 1.0) / 2.0;  // convert to 0.0..1.0
     level *= responsivenessAdjusted;
-    if (level > killThreshold &&
-        prob2bool((level - ACTION_MIN) / ACTION_RANGE)) {
+    if (level > killThreshold && prob2bool((level - ACTION_MIN) / ACTION_RANGE)) {
       Coordinate otherLoc = indiv.loc + indiv.lastMoveDir;
       if (grid.isInBounds(otherLoc) && grid.isOccupiedAt(otherLoc)) {
-        Individual &indiv2 = peeps.getIndiv(otherLoc);
+        Individual& indiv2 = peeps.getIndiv(otherLoc);
         assert((indiv.loc - indiv2.loc).length() == 1);
         peeps.queueForDeath(indiv2);
       }
@@ -171,10 +166,14 @@ void executeActions(Individual &indiv,
   float moveX = isEnabled(Action::MOVE_X) ? actionLevels[Action::MOVE_X] : 0.0;
   float moveY = isEnabled(Action::MOVE_Y) ? actionLevels[Action::MOVE_Y] : 0.0;
 
-  if (isEnabled(Action::MOVE_EAST)) moveX += actionLevels[Action::MOVE_EAST];
-  if (isEnabled(Action::MOVE_WEST)) moveX -= actionLevels[Action::MOVE_WEST];
-  if (isEnabled(Action::MOVE_NORTH)) moveY += actionLevels[Action::MOVE_NORTH];
-  if (isEnabled(Action::MOVE_SOUTH)) moveY -= actionLevels[Action::MOVE_SOUTH];
+  if (isEnabled(Action::MOVE_EAST))
+    moveX += actionLevels[Action::MOVE_EAST];
+  if (isEnabled(Action::MOVE_WEST))
+    moveX -= actionLevels[Action::MOVE_WEST];
+  if (isEnabled(Action::MOVE_NORTH))
+    moveY += actionLevels[Action::MOVE_NORTH];
+  if (isEnabled(Action::MOVE_SOUTH))
+    moveY -= actionLevels[Action::MOVE_SOUTH];
 
   if (isEnabled(Action::MOVE_FORWARD)) {
     level = actionLevels[Action::MOVE_FORWARD];
@@ -220,18 +219,15 @@ void executeActions(Individual &indiv,
   moveY *= responsivenessAdjusted;
 
   // The probability of movement along each axis is the absolute value
-  int16_t probX =
-      (int16_t)prob2bool(std::abs(moveX));  // convert abs(level) to 0 or 1
-  int16_t probY =
-      (int16_t)prob2bool(std::abs(moveY));  // convert abs(level) to 0 or 1
+  int16_t probX = (int16_t)prob2bool(std::abs(moveX));  // convert abs(level) to 0 or 1
+  int16_t probY = (int16_t)prob2bool(std::abs(moveY));  // convert abs(level) to 0 or 1
 
   // The direction of movement (if any) along each axis is the sign
   int16_t signumX = moveX < 0.0 ? -1 : 1;
   int16_t signumY = moveY < 0.0 ? -1 : 1;
 
   // Generate a normalized movement offset, where each component is -1, 0, or 1
-  Coordinate movementOffset = {(int16_t)(probX * signumX),
-                               (int16_t)(probY * signumY)};
+  Coordinate movementOffset = {(int16_t)(probX * signumX), (int16_t)(probY * signumY)};
 
   // Move there if it's a valid location
   Coordinate newLoc = indiv.loc + movementOffset;

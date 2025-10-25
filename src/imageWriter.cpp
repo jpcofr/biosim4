@@ -14,7 +14,6 @@
 #define cimg_use_opencv 1
 #define cimg_display 0
 #include "CImg.h"
-
 #include "simulator.h"
 
 namespace BioSim {
@@ -23,23 +22,21 @@ cimg_library::CImgList<uint8_t> imageList;
 
 // Pushes a new image frame onto .imageList.
 //
-void saveOneFrameImmed(const ImageFrameData &data) {
+void saveOneFrameImmed(const ImageFrameData& data) {
   using namespace cimg_library;
 
-  CImg<uint8_t> image(
-      parameterMngrSingleton.gridSize_X * parameterMngrSingleton.displayScale,
-      parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale,
-      1,    // Z depth
-      3,    // color channels
-      255);  // initial value
+  CImg<uint8_t> image(parameterMngrSingleton.gridSize_X * parameterMngrSingleton.displayScale,
+                      parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale,
+                      1,     // Z depth
+                      3,     // color channels
+                      255);  // initial value
   uint8_t color[3];
   uint8_t temp;
   float alpha = 1.0;
   uint16_t offset;
   std::stringstream imageFilename;
-  imageFilename << parameterMngrSingleton.imageDir << "/frame-"
-                << std::setfill('0') << std::setw(6) << data.generation << '-'
-                << std::setfill('0') << std::setw(6) << data.simStep << ".png";
+  imageFilename << parameterMngrSingleton.imageDir << "/frame-" << std::setfill('0') << std::setw(6) << data.generation
+                << '-' << std::setfill('0') << std::setw(6) << data.simStep << ".png";
 
   // Draw save and/or unsafe area(s)
   switch (data.challenge) {
@@ -47,34 +44,22 @@ void saveOneFrameImmed(const ImageFrameData &data) {
       color[0] = 0xa0;
       color[1] = 0xff;
       color[2] = 0xa0;
-      image.draw_circle(
-          (parameterMngrSingleton.gridSize_X *
-           parameterMngrSingleton.displayScale) /
-              2,
-          (parameterMngrSingleton.gridSize_Y *
-           parameterMngrSingleton.displayScale) /
-              2,
-          (parameterMngrSingleton.gridSize_Y / 3.0 *
-           parameterMngrSingleton.displayScale),
-          color,  // rgb
-          1.0);   // alpha
+      image.draw_circle((parameterMngrSingleton.gridSize_X * parameterMngrSingleton.displayScale) / 2,
+                        (parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale) / 2,
+                        (parameterMngrSingleton.gridSize_Y / 3.0 * parameterMngrSingleton.displayScale),
+                        color,  // rgb
+                        1.0);   // alpha
 
       break;
     case CHALLENGE_CENTER_UNWEIGHTED:
       color[0] = 0xa0;
       color[1] = 0xff;
       color[2] = 0xa0;
-      image.draw_circle(
-          (parameterMngrSingleton.gridSize_X *
-           parameterMngrSingleton.displayScale) /
-              2,
-          (parameterMngrSingleton.gridSize_Y *
-           parameterMngrSingleton.displayScale) /
-              2,
-          (parameterMngrSingleton.gridSize_Y / 3.0 *
-           parameterMngrSingleton.displayScale),
-          color,  // rgb
-          1.0);   // alpha
+      image.draw_circle((parameterMngrSingleton.gridSize_X * parameterMngrSingleton.displayScale) / 2,
+                        (parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale) / 2,
+                        (parameterMngrSingleton.gridSize_Y / 3.0 * parameterMngrSingleton.displayScale),
+                        color,  // rgb
+                        1.0);   // alpha
 
       break;
     case CHALLENGE_RADIOACTIVE_WALLS:
@@ -87,8 +72,7 @@ void saveOneFrameImmed(const ImageFrameData &data) {
       }
       image.draw_rectangle(offset * parameterMngrSingleton.displayScale, 0,
                            (offset + 5) * parameterMngrSingleton.displayScale,
-                           parameterMngrSingleton.gridSize_Y *
-                               parameterMngrSingleton.displayScale,
+                           parameterMngrSingleton.gridSize_Y * parameterMngrSingleton.displayScale,
                            color,  // rgb
                            1.0);   // alpha
 
@@ -115,13 +99,10 @@ void saveOneFrameImmed(const ImageFrameData &data) {
 
           image.draw_rectangle(
               ((x - 1) * parameterMngrSingleton.displayScale) + 1,
-              (((parameterMngrSingleton.gridSize_Y - y) - 2)) *
-                      parameterMngrSingleton.displayScale +
-                  1,
+              (((parameterMngrSingleton.gridSize_Y - y) - 2)) * parameterMngrSingleton.displayScale + 1,
               (x + 1) * parameterMngrSingleton.displayScale,
-              ((parameterMngrSingleton.gridSize_Y - (y - 0))) *
-                  parameterMngrSingleton.displayScale,
-              color,  // rgb
+              ((parameterMngrSingleton.gridSize_Y - (y - 0))) * parameterMngrSingleton.displayScale,
+              color,   // rgb
               alpha);  // alpha
         }
       }
@@ -144,35 +125,28 @@ void saveOneFrameImmed(const ImageFrameData &data) {
             alpha = 0.5;
           }
 
-        image.draw_rectangle(
-            ((x - 1) * parameterMngrSingleton.displayScale) + 1,
-            (((parameterMngrSingleton.gridSize_Y - y) - 2)) *
-                    parameterMngrSingleton.displayScale +
-                1,
-            (x + 1) * parameterMngrSingleton.displayScale,
-            ((parameterMngrSingleton.gridSize_Y - (y - 0))) *
-                parameterMngrSingleton.displayScale,
-            color,  // rgb
-            alpha);  // alpha
+          image.draw_rectangle(
+              ((x - 1) * parameterMngrSingleton.displayScale) + 1,
+              (((parameterMngrSingleton.gridSize_Y - y) - 2)) * parameterMngrSingleton.displayScale + 1,
+              (x + 1) * parameterMngrSingleton.displayScale,
+              ((parameterMngrSingleton.gridSize_Y - (y - 0))) * parameterMngrSingleton.displayScale,
+              color,   // rgb
+              alpha);  // alpha
+        }
       }
     }
-  }
   }
 
   // Draw barrier locations
   color[0] = color[1] = color[2] = 0x88;
   for (Coordinate loc : data.barrierLocs) {
-    image.draw_rectangle(
-        loc.x * parameterMngrSingleton.displayScale -
-            (parameterMngrSingleton.displayScale / 2),
-        ((parameterMngrSingleton.gridSize_Y - loc.y) - 1) *
-                parameterMngrSingleton.displayScale -
-            (parameterMngrSingleton.displayScale / 2),
-        (loc.x + 1) * parameterMngrSingleton.displayScale,
-        ((parameterMngrSingleton.gridSize_Y - (loc.y - 0))) *
-            parameterMngrSingleton.displayScale,
-        color,  // rgb
-        1.0);   // alpha
+    image.draw_rectangle(loc.x * parameterMngrSingleton.displayScale - (parameterMngrSingleton.displayScale / 2),
+                         ((parameterMngrSingleton.gridSize_Y - loc.y) - 1) * parameterMngrSingleton.displayScale -
+                             (parameterMngrSingleton.displayScale / 2),
+                         (loc.x + 1) * parameterMngrSingleton.displayScale,
+                         ((parameterMngrSingleton.gridSize_Y - (loc.y - 0))) * parameterMngrSingleton.displayScale,
+                         color,  // rgb
+                         1.0);   // alpha
   }
 
   // Draw agents
@@ -180,9 +154,7 @@ void saveOneFrameImmed(const ImageFrameData &data) {
   constexpr uint8_t maxColorVal = 0xb0;
   constexpr uint8_t maxLumaVal = 0xb0;
 
-  auto rgbToLuma = [](uint8_t r, uint8_t g, uint8_t b) {
-    return (r + r + r + b + g + g + g + g) / 8;
-  };
+  auto rgbToLuma = [](uint8_t r, uint8_t g, uint8_t b) { return (r + r + r + b + g + g + g + g) / 8; };
 
   for (size_t i = 0; i < data.indivLocs.size(); ++i) {
     int c = data.indivColors[i];
@@ -192,33 +164,31 @@ void saveOneFrameImmed(const ImageFrameData &data) {
 
     // Prevent color mappings to very bright colors (hard to see):
     if (rgbToLuma(color[0], color[1], color[2]) > maxLumaVal) {
-      if (color[0] > maxColorVal) color[0] %= maxColorVal;
-      if (color[1] > maxColorVal) color[1] %= maxColorVal;
-      if (color[2] > maxColorVal) color[2] %= maxColorVal;
+      if (color[0] > maxColorVal)
+        color[0] %= maxColorVal;
+      if (color[1] > maxColorVal)
+        color[1] %= maxColorVal;
+      if (color[2] > maxColorVal)
+        color[2] %= maxColorVal;
     }
 
     image.draw_circle(
         data.indivLocs[i].x * parameterMngrSingleton.displayScale,
-        ((parameterMngrSingleton.gridSize_Y - data.indivLocs[i].y) - 1) *
-            parameterMngrSingleton.displayScale,
+        ((parameterMngrSingleton.gridSize_Y - data.indivLocs[i].y) - 1) * parameterMngrSingleton.displayScale,
         parameterMngrSingleton.agentSize,
         color,  // rgb
         1.0);   // alpha
   }
 
   // Save as PNG file
-  //image.save_png(imageFilename.str().c_str(), 3);
+  // image.save_png(imageFilename.str().c_str(), 3);
   imageList.push_back(image);
 
   // CImgDisplay local(image, "biosim3");
 }
 
 // Starts the image writer asynchronous thread.
-ImageWriter::ImageWriter()
-    : droppedFrameCount{0},
-      busy{true},
-      dataReady{false},
-      abortRequested{false} {}
+ImageWriter::ImageWriter() : droppedFrameCount{0}, busy{true}, dataReady{false}, abortRequested{false} {}
 
 void ImageWriter::init(uint16_t layers, uint16_t sizeX, uint16_t sizeY) {
   // No initialization needed for vector-based signalLayers
@@ -230,13 +200,10 @@ void ImageWriter::startNewGeneration() {
   skippedFrames = 0;
 }
 
-uint8_t makeGeneticColor(const Genome &genome) {
-  return ((genome.size() & 1) | ((genome.front().sourceType) << 1) |
-          ((genome.back().sourceType) << 2) |
-          ((genome.front().sinkType) << 3) | ((genome.back().sinkType) << 4) |
-          ((genome.front().sourceNum & 1) << 5) |
-          ((genome.front().sinkNum & 1) << 6) |
-          ((genome.back().sourceNum & 1) << 7));
+uint8_t makeGeneticColor(const Genome& genome) {
+  return ((genome.size() & 1) | ((genome.front().sourceType) << 1) | ((genome.back().sourceType) << 2) |
+          ((genome.front().sinkType) << 3) | ((genome.back().sinkType) << 4) | ((genome.front().sourceNum & 1) << 5) |
+          ((genome.front().sinkNum & 1) << 6) | ((genome.back().sourceNum & 1) << 7));
 }
 
 // This is a synchronous gate for giving a job to saveFrameThread().
@@ -252,8 +219,7 @@ uint8_t makeGeneticColor(const Genome &genome) {
 // function: there's no consequence other than a harmless frame-drop.
 // The condition variable allows the saveFrameThread() to wait until
 // there's a job to do.
-bool ImageWriter::saveVideoFrame(unsigned simStep, unsigned generation,
-                                 unsigned challenge, unsigned barrierType) {
+bool ImageWriter::saveVideoFrame(unsigned simStep, unsigned generation, unsigned challenge, unsigned barrierType) {
   if (!busy) {
     busy = true;
     // queue job for saveFrameThread()
@@ -268,9 +234,8 @@ bool ImageWriter::saveVideoFrame(unsigned simStep, unsigned generation,
     data.indivColors.clear();
     data.barrierLocs.clear();
 
-    for (uint16_t index = 1; index <= parameterMngrSingleton.population;
-         ++index) {
-      const Individual &indiv = peeps[index];
+    for (uint16_t index = 1; index <= parameterMngrSingleton.population; ++index) {
+      const Individual& indiv = peeps[index];
       if (indiv.alive) {
         data.indivLocs.push_back(indiv.loc);
         data.indivColors.push_back(makeGeneticColor(indiv.genome));
@@ -278,8 +243,7 @@ bool ImageWriter::saveVideoFrame(unsigned simStep, unsigned generation,
     }
 
     // Copy signal layers
-    for (unsigned layerNum = 0; layerNum < parameterMngrSingleton.signalLayers;
-         ++layerNum) {
+    for (unsigned layerNum = 0; layerNum < parameterMngrSingleton.signalLayers; ++layerNum) {
       for (int16_t x = 0; x < parameterMngrSingleton.gridSize_X; ++x) {
         for (int16_t y = 0; y < parameterMngrSingleton.gridSize_Y; ++y) {
           data.signalLayers[layerNum][x][y] = pheromones[layerNum][x][y];
@@ -287,7 +251,7 @@ bool ImageWriter::saveVideoFrame(unsigned simStep, unsigned generation,
       }
     }
 
-    auto const &barrierLocs = grid.getBarrierLocations();
+    auto const& barrierLocs = grid.getBarrierLocations();
     for (Coordinate loc : barrierLocs) {
       data.barrierLocs.push_back(loc);
     }
@@ -307,8 +271,7 @@ bool ImageWriter::saveVideoFrame(unsigned simStep, unsigned generation,
 }
 
 // Synchronous version, always returns true
-bool ImageWriter::saveVideoFrameSync(unsigned simStep, unsigned generation,
-                                     unsigned challenge, unsigned barrierType) {
+bool ImageWriter::saveVideoFrameSync(unsigned simStep, unsigned generation, unsigned challenge, unsigned barrierType) {
   // We cache a local copy of data from params, grid, and peeps because
   // those objects will change by the main thread at the same time our
   // saveFrameThread() is using it to output a video frame.
@@ -321,9 +284,8 @@ bool ImageWriter::saveVideoFrameSync(unsigned simStep, unsigned generation,
   data.barrierLocs.clear();
   data.signalLayers.clear();
 
-  for (uint16_t index = 1; index <= parameterMngrSingleton.population;
-       ++index) {
-    const Individual &indiv = peeps[index];
+  for (uint16_t index = 1; index <= parameterMngrSingleton.population; ++index) {
+    const Individual& indiv = peeps[index];
     if (indiv.alive) {
       data.indivLocs.push_back(indiv.loc);
       data.indivColors.push_back(makeGeneticColor(indiv.genome));
@@ -333,8 +295,7 @@ bool ImageWriter::saveVideoFrameSync(unsigned simStep, unsigned generation,
   // Copy signal layers - note: pheromones uses Signals class [layer][x][y]
   // but we need to copy to simple vector structure
   data.signalLayers.resize(parameterMngrSingleton.signalLayers);
-  for (unsigned layerNum = 0; layerNum < parameterMngrSingleton.signalLayers;
-       ++layerNum) {
+  for (unsigned layerNum = 0; layerNum < parameterMngrSingleton.signalLayers; ++layerNum) {
     data.signalLayers[layerNum].resize(parameterMngrSingleton.gridSize_X);
     for (int16_t x = 0; x < parameterMngrSingleton.gridSize_X; ++x) {
       data.signalLayers[layerNum][x].resize(parameterMngrSingleton.gridSize_Y);
@@ -344,7 +305,7 @@ bool ImageWriter::saveVideoFrameSync(unsigned simStep, unsigned generation,
     }
   }
 
-  auto const &barrierLocs = grid.getBarrierLocations();
+  auto const& barrierLocs = grid.getBarrierLocations();
   for (Coordinate loc : barrierLocs) {
     data.barrierLocs.push_back(loc);
   }
@@ -362,13 +323,10 @@ void ImageWriter::saveGenerationVideo(unsigned generation) {
     if (!imgDir.empty() && imgDir.back() != '/') {
       imgDir += '/';
     }
-    videoFilename << imgDir << "gen-"
-                  << std::setfill('0') << std::setw(6) << generation
-                  << ".avi";
-    
-    std::cout << "Saving " << imageList.size() << " frames to " 
-              << videoFilename.str() << std::endl;
-    
+    videoFilename << imgDir << "gen-" << std::setfill('0') << std::setw(6) << generation << ".avi";
+
+    std::cout << "Saving " << imageList.size() << " frames to " << videoFilename.str() << std::endl;
+
     try {
       cv::setNumThreads(2);
       imageList.save_video(videoFilename.str().c_str(), 25, "H264");
@@ -383,7 +341,7 @@ void ImageWriter::saveGenerationVideo(unsigned generation) {
         std::cerr << "Video encoding failed: " << e2.what() << std::endl;
       }
     }
-    
+
     if (skippedFrames > 0) {
       std::cout << "Video skipped " << skippedFrames << " frames" << std::endl;
     }

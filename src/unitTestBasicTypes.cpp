@@ -2,16 +2,18 @@
 // This tests the types Dir, Coord, and Polar, and enum Compass.
 // See basicTypes.h for more info about the basic types.
 
+#include "basicTypes.h"
+
 #include <cassert>
 #include <cmath>
-
-#include "basicTypes.h"
 
 namespace BioSim {
 
 // returns true only if a and b are the same to within
 // 4 digits accuracy
-bool areClosef(float a, float b) { return std::abs(a - b) < 0.0001; }
+bool areClosef(float a, float b) {
+  return std::abs(a - b) < 0.0001;
+}
 
 bool unitTestBasicTypes() {
   // Dir

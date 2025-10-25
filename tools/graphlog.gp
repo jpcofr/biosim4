@@ -28,4 +28,3 @@ ScaleDiversity(d)= d
 plot "./output/logs/epoch-log.txt" \
        using 1:(ScaleSurvivors($2)) with lines lw 2 linecolor 2 title "Survivors", \
     "" using 1:(ScaleDiversity($3)) with lines lw 2 linecolor 1 title "Diversity" axes x1y2
-

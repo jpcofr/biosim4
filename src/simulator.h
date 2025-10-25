@@ -3,13 +3,13 @@
 
 // Main header for the simulator. Also see simulator.cpp.
 
-#include "basicTypes.h"   // types Dir, Coord, Polar and their values
-#include "params.h"       // params from the config file plus some extra stuff
-#include "indiv.h"        // data structure for an individual
-#include "grid.h"         // the 2D world where the peeps live
-#include "signals.h"      // a 2D array of pheromones that overlay the world grid
-#include "peeps.h"        // the 2D world where the peeps live
+#include "basicTypes.h"  // types Dir, Coord, Polar and their values
+#include "grid.h"        // the 2D world where the peeps live
+#include "indiv.h"       // data structure for an individual
+#include "params.h"      // params from the config file plus some extra stuff
+#include "peeps.h"       // the 2D world where the peeps live
 #include "random.h"
+#include "signals.h"  // a 2D array of pheromones that overlay the world grid
 
 namespace BioSim {
 
@@ -37,17 +37,17 @@ constexpr unsigned CHALLENGE_LOCATION_SEQUENCE = 16;
 constexpr unsigned CHALLENGE_ALTRUISM = 17;
 constexpr unsigned CHALLENGE_ALTRUISM_SACRIFICE = 18;
 
-extern ParamManager paramManager; // manages simulator params from the config file plus more
-extern const Params &parameterMngrSingleton; // read-only simulator config params
-extern Grid grid;  // 2D arena where the individuals live
-extern Signals pheromones;  // pheromone layers
-extern Peeps peeps;   // container of all the individuals
-extern void simulator(int argc, char **argv);
+extern ParamManager paramManager;             // manages simulator params from the config file plus more
+extern const Params& parameterMngrSingleton;  // read-only simulator config params
+extern Grid grid;                             // 2D arena where the individuals live
+extern Signals pheromones;                    // pheromone layers
+extern Peeps peeps;                           // container of all the individuals
+extern void simulator(int argc, char** argv);
 
 // Feeds in-bounds Coords to a function: given a center location and a radius, this
 // function will call f(Coord) once for each location inside the specified area.
 extern void visitNeighborhood(Coordinate loc, float radius, std::function<void(Coordinate)> f);
 
-} // end namespace BS
+}  // namespace BioSim
 
-#endif // SIMULATOR_H_INCLUDED
+#endif  // SIMULATOR_H_INCLUDED

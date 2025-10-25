@@ -76,11 +76,9 @@ struct Params {
 
 class ParamManager {
  public:
-  const Params &getParamRef() const {
-    return privParams;
-  }  // for public read-only access
+  const Params& getParamRef() const { return privParams; }  // for public read-only access
   void setDefaults();
-  void registerConfigFile(const char *filename);
+  void registerConfigFile(const char* filename);
   void updateFromConfigFile(unsigned generationNumber);
   void checkParameters();
 
@@ -93,7 +91,7 @@ class ParamManager {
 // Returns a copy of params with default values overridden by the values
 // in the specified config file. The filename of the config file is saved
 // inside the params for future reference.
-Params paramsInit(int argc, char **argv);
+Params paramsInit(int argc, char** argv);
 
 }  // namespace BioSim
 

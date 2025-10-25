@@ -1,10 +1,10 @@
 // getSensor.cpp
 
+#include "simulator.h"
+
 #include <cassert>
 #include <cmath>
 #include <iostream>
-
-#include "simulator.h"
 
 namespace BioSim {
 
@@ -30,8 +30,7 @@ float getPopulationDensityAlongAxis(Coordinate loc, Dir dir) {
   auto f = [&](Coordinate tloc) {
     if (tloc != loc && grid.isOccupiedAt(tloc)) {
       Coordinate offset = tloc - loc;
-      double proj = dirVecX * offset.x +
-                    dirVecY * offset.y;  // Magnitude of projection along dir
+      double proj = dirVecX * offset.x + dirVecY * offset.y;  // Magnitude of projection along dir
       double contrib = proj / (offset.x * offset.x + offset.y * offset.y);
       sum += contrib;
     }
@@ -53,8 +52,7 @@ float getPopulationDensityAlongAxis(Coordinate loc, Dir dir) {
 // location along opposite directions of the specified axis to the sensor range.
 // If no barriers are found, the result is sensor mid-range. Ignores agents in
 // the path.
-float getShortProbeBarrierDistance(Coordinate loc0, Dir dir,
-                                   unsigned probeDistance) {
+float getShortProbeBarrierDistance(Coordinate loc0, Dir dir, unsigned probeDistance) {
   unsigned countFwd = 0;
   unsigned countRev = 0;
   Coordinate loc = loc0 + dir;
@@ -80,9 +78,8 @@ float getShortProbeBarrierDistance(Coordinate loc0, Dir dir,
     countRev = probeDistance;
   }
 
-  float sensorVal =
-      ((countFwd - countRev) + probeDistance);  // convert to 0..2*probeDistance
-  sensorVal = (sensorVal / 2.0) / probeDistance;  // convert to 0.0..1.0
+  float sensorVal = ((countFwd - countRev) + probeDistance);  // convert to 0..2*probeDistance
+  sensorVal = (sensorVal / 2.0) / probeDistance;              // convert to 0.0..1.0
   return sensorVal;
 }
 
@@ -126,18 +123,15 @@ float getSignalDensityAlongAxis(unsigned layerNum, Coordinate loc, Dir dir) {
   auto f = [&](Coordinate tloc) {
     if (tloc != loc) {
       Coordinate offset = tloc - loc;
-      double proj = (dirVecX * offset.x +
-                     dirVecY * offset.y);  // Magnitude of projection along dir
-      double contrib = (proj * pheromones.getMagnitude(layerNum, tloc)) /
-                       (offset.x * offset.x + offset.y * offset.y);
+      double proj = (dirVecX * offset.x + dirVecY * offset.y);  // Magnitude of projection along dir
+      double contrib = (proj * pheromones.getMagnitude(layerNum, tloc)) / (offset.x * offset.x + offset.y * offset.y);
       sum += contrib;
     }
   };
 
   visitNeighborhood(loc, parameterMngrSingleton.signalSensorRadius, f);
 
-  double maxSumMag =
-      6.0 * parameterMngrSingleton.signalSensorRadius * SIGNAL_MAX;
+  double maxSumMag = 6.0 * parameterMngrSingleton.signalSensorRadius * SIGNAL_MAX;
   assert(sum >= -maxSumMag && sum <= maxSumMag);
   double sensorVal = sum / maxSumMag;   // convert to -1.0..1.0
   sensorVal = (sensorVal + 1.0) / 2.0;  // convert to 0.0..1.0
@@ -149,8 +143,7 @@ float getSignalDensityAlongAxis(unsigned layerNum, Coordinate loc, Dir dir) {
 // direction, not including loc. If the probe encounters a boundary or a
 // barrier before reaching the longProbeDist distance, returns longProbeDist.
 // Returns 0..longProbeDist.
-unsigned longProbePopulationFwd(Coordinate loc, Dir dir,
-                                unsigned longProbeDist) {
+unsigned longProbePopulationFwd(Coordinate loc, Dir dir, unsigned longProbeDist) {
   assert(longProbeDist > 0);
   unsigned count = 0;
   loc = loc + dir;
@@ -203,30 +196,25 @@ float Individual::getSensor(Sensor sensorNum, unsigned simStep) const {
       // Finds closest boundary, compares that to the max possible dist
       // to a boundary from the center, and converts that linearly to the
       // sensor range 0.0..1.0
-      int distX =
-          std::min<int>(loc.x, (parameterMngrSingleton.gridSize_X - loc.x) - 1);
-      int distY =
-          std::min<int>(loc.y, (parameterMngrSingleton.gridSize_Y - loc.y) - 1);
+      int distX = std::min<int>(loc.x, (parameterMngrSingleton.gridSize_X - loc.x) - 1);
+      int distY = std::min<int>(loc.y, (parameterMngrSingleton.gridSize_Y - loc.y) - 1);
       int closest = std::min<int>(distX, distY);
       int maxPossible =
-          std::max<int>(parameterMngrSingleton.gridSize_X / 2 - 1,
-                        parameterMngrSingleton.gridSize_Y / 2 - 1);
+          std::max<int>(parameterMngrSingleton.gridSize_X / 2 - 1, parameterMngrSingleton.gridSize_Y / 2 - 1);
       sensorVal = (float)closest / maxPossible;
       break;
     }
     case Sensor::BOUNDARY_DIST_X: {
       // Measures the distance to nearest boundary in the east-west axis,
       // max distance is half the grid width; scaled to sensor range 0.0..1.0.
-      int minDistX =
-          std::min<int>(loc.x, (parameterMngrSingleton.gridSize_X - loc.x) - 1);
+      int minDistX = std::min<int>(loc.x, (parameterMngrSingleton.gridSize_X - loc.x) - 1);
       sensorVal = minDistX / (parameterMngrSingleton.gridSize_X / 2.0);
       break;
     }
     case Sensor::BOUNDARY_DIST_Y: {
       // Measures the distance to nearest boundary in the south-north axis,
       // max distance is half the grid height; scaled to sensor range 0.0..1.0.
-      int minDistY =
-          std::min<int>(loc.y, (parameterMngrSingleton.gridSize_Y - loc.y) - 1);
+      int minDistY = std::min<int>(loc.y, (parameterMngrSingleton.gridSize_Y - loc.y) - 1);
       sensorVal = minDistY / (parameterMngrSingleton.gridSize_Y / 2.0);
       break;
     }
@@ -267,16 +255,14 @@ float Individual::getSensor(Sensor sensorNum, unsigned simStep) const {
       // Measures the distance to the nearest other individual in the
       // forward direction. If non found, returns the maximum sensor value.
       // Maps the result to the sensor range 0.0..1.0.
-      sensorVal = longProbePopulationFwd(loc, lastMoveDir, longProbeDist) /
-                  (float)longProbeDist;  // 0..1
+      sensorVal = longProbePopulationFwd(loc, lastMoveDir, longProbeDist) / (float)longProbeDist;  // 0..1
       break;
     }
     case Sensor::LONGPROBE_BAR_FWD: {
       // Measures the distance to the nearest barrier in the forward
       // direction. If non found, returns the maximum sensor value.
       // Maps the result to the sensor range 0.0..1.0.
-      sensorVal = longProbeBarrierFwd(loc, lastMoveDir, longProbeDist) /
-                  (float)longProbeDist;  // 0..1
+      sensorVal = longProbeBarrierFwd(loc, lastMoveDir, longProbeDist) / (float)longProbeDist;  // 0..1
       break;
     }
     case Sensor::POPULATION: {
@@ -293,8 +279,7 @@ float Individual::getSensor(Sensor sensorNum, unsigned simStep) const {
         }
       };
 
-      visitNeighborhood(center, parameterMngrSingleton.populationSensorRadius,
-                        f);
+      visitNeighborhood(center, parameterMngrSingleton.populationSensorRadius, f);
       sensorVal = (float)countOccupied / countLocs;
       break;
     }
@@ -306,21 +291,18 @@ float Individual::getSensor(Sensor sensorNum, unsigned simStep) const {
     case Sensor::POPULATION_LR:
       // Sense population density along an axis 90 degrees from last movement
       // direction
-      sensorVal =
-          getPopulationDensityAlongAxis(loc, lastMoveDir.rotate90DegCW());
+      sensorVal = getPopulationDensityAlongAxis(loc, lastMoveDir.rotate90DegCW());
       break;
     case Sensor::BARRIER_FWD:
       // Sense the nearest barrier along axis of last movement direction, mapped
       // to sensor range 0.0..1.0
-      sensorVal = getShortProbeBarrierDistance(
-          loc, lastMoveDir, parameterMngrSingleton.shortProbeBarrierDistance);
+      sensorVal = getShortProbeBarrierDistance(loc, lastMoveDir, parameterMngrSingleton.shortProbeBarrierDistance);
       break;
     case Sensor::BARRIER_LR:
       // Sense the nearest barrier along axis perpendicular to last movement
       // direction, mapped to sensor range 0.0..1.0
-      sensorVal = getShortProbeBarrierDistance(
-          loc, lastMoveDir.rotate90DegCW(),
-          parameterMngrSingleton.shortProbeBarrierDistance);
+      sensorVal = getShortProbeBarrierDistance(loc, lastMoveDir.rotate90DegCW(),
+                                               parameterMngrSingleton.shortProbeBarrierDistance);
       break;
     case Sensor::RANDOM:
       // Returns a random sensor value in the range 0.0..1.0.
@@ -338,15 +320,14 @@ float Individual::getSensor(Sensor sensorNum, unsigned simStep) const {
     case Sensor::SIGNAL0_LR:
       // Sense signal0 density along an axis perpendicular to last movement
       // direction
-      sensorVal =
-          getSignalDensityAlongAxis(0, loc, lastMoveDir.rotate90DegCW());
+      sensorVal = getSignalDensityAlongAxis(0, loc, lastMoveDir.rotate90DegCW());
       break;
     case Sensor::GENETIC_SIM_FWD: {
       // Return minimum sensor value if nobody is alive in the forward adjacent
       // location, else returns a similarity match in the sensor range 0.0..1.0
       Coordinate loc2 = loc + lastMoveDir;
       if (grid.isInBounds(loc2) && grid.isOccupiedAt(loc2)) {
-        const Individual &indiv2 = peeps.getIndiv(loc2);
+        const Individual& indiv2 = peeps.getIndiv(loc2);
         if (indiv2.alive) {
           sensorVal = genomeSimilarity(genome, indiv2.genome);  // 0.0..1.0
         }
@@ -359,8 +340,7 @@ float Individual::getSensor(Sensor sensorNum, unsigned simStep) const {
   }
 
   if (std::isnan(sensorVal) || sensorVal < -0.01 || sensorVal > 1.01) {
-    std::cout << "sensorVal=" << (int)sensorVal << " for "
-              << sensorName((Sensor)sensorNum) << std::endl;
+    std::cout << "sensorVal=" << (int)sensorVal << " for " << sensorName((Sensor)sensorNum) << std::endl;
     sensorVal = std::max(0.0f, std::min(sensorVal, 1.0f));  // clip
   }
 

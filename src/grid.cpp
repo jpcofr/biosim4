@@ -1,9 +1,9 @@
 // grid.cpp
 
+#include "simulator.h"
+
 #include <cassert>
 #include <functional>
-
-#include "simulator.h"
 
 namespace BioSim {
 
@@ -36,19 +36,14 @@ Coordinate Grid::findEmptyLocation() const {
  * @param radius The radius of the neighborhood.
  * @param f The function to apply on each valid location in the neighborhood.
  */
-void visitNeighborhood(Coordinate loc, float radius,
-                       std::function<void(Coordinate)> function) {
+void visitNeighborhood(Coordinate loc, float radius, std::function<void(Coordinate)> function) {
   for (int dx = -std::min<int>(radius, loc.x);
-       dx <=
-       std::min<int>(radius, (parameterMngrSingleton.gridSize_X - loc.x) - 1);
-       ++dx) {
+       dx <= std::min<int>(radius, (parameterMngrSingleton.gridSize_X - loc.x) - 1); ++dx) {
     int16_t x = loc.x + dx;
     assert(x >= 0 && x < parameterMngrSingleton.gridSize_X);
     int extentY = (int)sqrt(radius * radius - dx * dx);
     for (int dy = -std::min<int>(extentY, loc.y);
-         dy <= std::min<int>(extentY,
-                             (parameterMngrSingleton.gridSize_Y - loc.y) - 1);
-         ++dy) {
+         dy <= std::min<int>(extentY, (parameterMngrSingleton.gridSize_Y - loc.y) - 1); ++dy) {
       int16_t y = loc.y + dy;
       assert(y >= 0 && y < parameterMngrSingleton.gridSize_Y);
       function(Coordinate{x, y});

@@ -1,16 +1,14 @@
 // unitTestGridVisitNeighborhood
 
-#include <iostream>
-
 #include "simulator.h"
+
+#include <iostream>
 
 namespace BioSim {
 
 void unitTestGridVisitNeighborhood() {
   // prints each coord:
-  auto printLoc = [&](Coordinate loc) {
-    std::cout << loc.x << ", " << loc.y << std::endl;
-  };
+  auto printLoc = [&](Coordinate loc) { std::cout << loc.x << ", " << loc.y << std::endl; };
 
   std::cout << "Test loc 10,10 radius 1" << std::endl;
   visitNeighborhood(Coordinate{10, 10}, 1.0, printLoc);
@@ -32,8 +30,7 @@ void unitTestGridVisitNeighborhood() {
 
   std::cout << "\nTest loc p.sizeX-1, p.sizeY-1 radius 2.0" << std::endl;
   visitNeighborhood(
-      Coordinate{(int16_t)(parameterMngrSingleton.gridSize_X - 1),
-                 (int16_t)(parameterMngrSingleton.gridSize_Y - 1)},
+      Coordinate{(int16_t)(parameterMngrSingleton.gridSize_X - 1), (int16_t)(parameterMngrSingleton.gridSize_Y - 1)},
       2.0, printLoc);
 }
 

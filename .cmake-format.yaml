@@ -1,0 +1,58 @@
+# CMake Format Configuration for BioSim4
+# https://cmake-format.readthedocs.io/
+
+# Formatting options
+format:
+  # Use 2 spaces for indentation
+  tab_size: 2
+
+  # Line width for formatting
+  line_width: 120
+
+  # If a statement is wrapped to more than one line, separate the arguments to one line each
+  dangle_parens: true
+
+  # Enable command case normalization (lowercase)
+  command_case: 'lower'
+
+  # Enable keyword case normalization (upper for keywords like PUBLIC, PRIVATE)
+  keyword_case: 'upper'
+
+  # Separate function arguments with newlines
+  max_subgroups_hwrap: 2
+
+  # Format of the continuation indent
+  use_tabchars: false
+
+  # Align closing parentheses
+  dangle_align: 'prefix'
+
+# Parser options
+parse:
+  # Additional commands to recognize
+  additional_commands:
+    foo:
+      flags:
+      - BAR
+      - BAZ
+      kwargs:
+        HEADERS: '*'
+        SOURCES: '*'
+        DEPENDS: '*'
+
+# Markup options
+markup:
+  # Enable comment markup parsing
+  enable_markup: true
+
+  # First line comment should be wrapped to column 1
+  first_comment_is_literal: false
+
+  # If comment markup is enabled, don't reflow any comment block which contains at least one line that starts with this pattern
+  literal_comment_pattern: null
+
+  # Regular expression pattern to match comment fence markers
+  fence_pattern: ^\s*([`~]{3}[`~]*)(.*)$
+
+  # Regular expression pattern for comment ruler
+  ruler_pattern: ^\s*[^\w\s]{3}.*[^\w\s]{3}$

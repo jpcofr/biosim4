@@ -5,10 +5,10 @@
 // If arguments are provided, argv[1] should be the config file name.
 // Additional arguments are ignored. The simulator code is in the BS namespace.
 namespace BioSim {
-void simulator(int argc, char **argv);
+void simulator(int argc, char** argv);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // Initiate simulator with optional config (default: "config/biosim4.ini"). Refer to
   // simulator.cpp/h.
   BioSim::simulator(argc, argv);

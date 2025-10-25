@@ -1,13 +1,13 @@
 // analysis.cpp -- various reports
 
+#include "simulator.h"
+
 #include <cassert>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
-
-#include "simulator.h"
 
 namespace BioSim {
 
@@ -387,7 +387,7 @@ void Individual::printGenome() const {
 // This prints a neural net in a form that can be processed with
 // graph-nnet.py to produce a graphic illustration of the net.
 void Individual::printIGraphEdgeList() const {
-  for (auto &conn : nnet.connections) {
+  for (auto& conn : nnet.connections) {
     if (conn.sourceType == SENSOR) {
       std::cout << sensorShortName((Sensor)(conn.sourceNum));
     } else {
@@ -412,8 +412,7 @@ float averageGenomeLength() {
   unsigned long sum = 0;
 
   while (count-- > 0) {
-    sum +=
-        peeps[randomUint(1, parameterMngrSingleton.population)].genome.size();
+    sum += peeps[randomUint(1, parameterMngrSingleton.population)].genome.size();
     ++numberSamples;
   }
   return sum / numberSamples;
@@ -422,8 +421,7 @@ float averageGenomeLength() {
 // The epoch log contains one line per generation in a format that can be
 // fed to graphlog.gp to produce a chart of the simulation progress.
 // TODO remove hardcoded filename.
-void appendEpochLog(unsigned generation, unsigned numberSurvivors,
-                    unsigned murderCount) {
+void appendEpochLog(unsigned generation, unsigned numberSurvivors, unsigned murderCount) {
   std::ofstream foutput;
 
   if (generation == 0) {
@@ -434,8 +432,8 @@ void appendEpochLog(unsigned generation, unsigned numberSurvivors,
   foutput.open(parameterMngrSingleton.logDir + "/epoch-log.txt", std::ios::app);
 
   if (foutput.is_open()) {
-    foutput << generation << " " << numberSurvivors << " " << geneticDiversity()
-            << " " << averageGenomeLength() << " " << murderCount << std::endl;
+    foutput << generation << " " << numberSurvivors << " " << geneticDiversity() << " " << averageGenomeLength() << " "
+            << murderCount << std::endl;
   } else {
     assert(false);
   }
@@ -443,8 +441,7 @@ void appendEpochLog(unsigned generation, unsigned numberSurvivors,
 
 // Print stats about pheromone usage.
 void displaySignalUse() {
-  if (Sensor::SIGNAL0 > Sensor::NUM_SENSES &&
-      Sensor::SIGNAL0_FWD > Sensor::NUM_SENSES &&
+  if (Sensor::SIGNAL0 > Sensor::NUM_SENSES && Sensor::SIGNAL0_FWD > Sensor::NUM_SENSES &&
       Sensor::SIGNAL0_LR > Sensor::NUM_SENSES) {
     return;
   }
@@ -462,11 +459,8 @@ void displaySignalUse() {
     }
   }
   std::cout << "Signal spread "
-            << ((double)count /
-                (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y))
-            << "%, average "
-            << ((double)sum /
-                (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y))
+            << ((double)count / (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y))
+            << "%, average " << ((double)sum / (parameterMngrSingleton.gridSize_X * parameterMngrSingleton.gridSize_Y))
             << std::endl;
 }
 
@@ -477,11 +471,10 @@ void displaySensorActionReferenceCounts() {
   std::vector<unsigned> sensorCounts(Sensor::NUM_SENSES, 0);
   std::vector<unsigned> actionCounts(Action::NUM_ACTIONS, 0);
 
-  for (unsigned index = 1; index <= parameterMngrSingleton.population;
-       ++index) {
+  for (unsigned index = 1; index <= parameterMngrSingleton.population; ++index) {
     if (peeps[index].alive) {
-      const Individual &indiv = peeps[index];
-      for (const Gene &gene : indiv.nnet.connections) {
+      const Individual& indiv = peeps[index];
+      for (const Gene& gene : indiv.nnet.connections) {
         if (gene.sourceType == SENSOR) {
           assert(gene.sourceNum < Sensor::NUM_SENSES);
           ++sensorCounts[(Sensor)gene.sourceNum];
@@ -497,26 +490,22 @@ void displaySensorActionReferenceCounts() {
   std::cout << "Sensors in use:" << std::endl;
   for (unsigned i = 0; i < sensorCounts.size(); ++i) {
     if (sensorCounts[i] > 0) {
-      std::cout << "  " << sensorCounts[i] << " - " << sensorName((Sensor)i)
-                << std::endl;
+      std::cout << "  " << sensorCounts[i] << " - " << sensorName((Sensor)i) << std::endl;
     }
   }
   std::cout << "Actions in use:" << std::endl;
   for (unsigned i = 0; i < actionCounts.size(); ++i) {
     if (actionCounts[i] > 0) {
-      std::cout << "  " << actionCounts[i] << " - " << actionName((Action)i)
-                << std::endl;
+      std::cout << "  " << actionCounts[i] << " - " << actionName((Action)i) << std::endl;
     }
   }
 }
 
 void displaySampleGenomes(unsigned count) {
   unsigned index = 1;  // indexes start at 1
-  for (index = 1; count > 0 && index <= parameterMngrSingleton.population;
-       ++index) {
+  for (index = 1; count > 0 && index <= parameterMngrSingleton.population; ++index) {
     if (peeps[index].alive) {
-      std::cout << "---------------------------\nIndividual ID " << index
-                << std::endl;
+      std::cout << "---------------------------\nIndividual ID " << index << std::endl;
       peeps[index].printGenome();
       std::cout << std::endl;
 

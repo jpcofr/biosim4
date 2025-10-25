@@ -1,8 +1,8 @@
 // createBarrier.cpp
 
-#include <cassert>
-
 #include "simulator.h"
+
+#include <cassert>
 
 namespace BioSim {
 
@@ -95,8 +95,7 @@ void Grid::createBarrier(unsigned barrierType) {
     case 4: {
       int16_t minX = parameterMngrSingleton.gridSize_X / 4;
       int16_t maxX = minX + parameterMngrSingleton.gridSize_X / 2;
-      int16_t minY = parameterMngrSingleton.gridSize_Y / 2 +
-                     parameterMngrSingleton.gridSize_Y / 4;
+      int16_t minY = parameterMngrSingleton.gridSize_Y / 2 + parameterMngrSingleton.gridSize_Y / 4;
       int16_t maxY = minY + 2;
 
       for (int16_t x = minX; x <= maxX; ++x) {
@@ -118,11 +117,8 @@ void Grid::createBarrier(unsigned barrierType) {
         //                              (int16_t)randomUint((int)radius +
         //                              margin, p.sizeY - ((float)radius +
         //                              margin)) );
-        return Coordinate(
-            (int16_t)randomUint(margin,
-                                parameterMngrSingleton.gridSize_X - margin),
-            (int16_t)randomUint(margin,
-                                parameterMngrSingleton.gridSize_Y - margin));
+        return Coordinate((int16_t)randomUint(margin, parameterMngrSingleton.gridSize_X - margin),
+                          (int16_t)randomUint(margin, parameterMngrSingleton.gridSize_Y - margin));
       };
 
       Coordinate center0 = randomLoc();
@@ -135,8 +131,7 @@ void Grid::createBarrier(unsigned barrierType) {
 
       do {
         center2 = randomLoc();
-      } while ((center0 - center2).length() < margin ||
-               (center1 - center2).length() < margin);
+      } while ((center0 - center2).length() < margin || (center1 - center2).length() < margin);
 
       barrierCenters.push_back(center0);
       // barrierCenters.push_back(center1);
@@ -162,12 +157,10 @@ void Grid::createBarrier(unsigned barrierType) {
         barrierLocations.push_back(loc);
       };
 
-      unsigned verticalSliceSize =
-          parameterMngrSingleton.gridSize_Y / (numberOfLocations + 1);
+      unsigned verticalSliceSize = parameterMngrSingleton.gridSize_Y / (numberOfLocations + 1);
 
       for (unsigned n = 1; n <= numberOfLocations; ++n) {
-        Coordinate loc = {(int16_t)(parameterMngrSingleton.gridSize_X / 2),
-                          (int16_t)(n * verticalSliceSize)};
+        Coordinate loc = {(int16_t)(parameterMngrSingleton.gridSize_X / 2), (int16_t)(n * verticalSliceSize)};
         visitNeighborhood(loc, radius, f);
         barrierCenters.push_back(loc);
       }

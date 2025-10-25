@@ -1,9 +1,9 @@
 // signals.cpp
 // Manages layers of pheremones
 
-#include <cstdint>
-
 #include "simulator.h"
+
+#include <cstdint>
 
 namespace BioSim {
 
@@ -24,15 +24,13 @@ void Signals::increment(uint16_t layerNum, Coordinate loc) {
     visitNeighborhood(loc, radius, [layerNum](Coordinate loc) {
       if (pheromones[layerNum][loc.x][loc.y] < SIGNAL_MAX) {
         pheromones[layerNum][loc.x][loc.y] =
-            std::min<unsigned>(SIGNAL_MAX, pheromones[layerNum][loc.x][loc.y] +
-                                               neighborIncreaseAmount);
+            std::min<unsigned>(SIGNAL_MAX, pheromones[layerNum][loc.x][loc.y] + neighborIncreaseAmount);
       }
     });
 
     if (pheromones[layerNum][loc.x][loc.y] < SIGNAL_MAX) {
       pheromones[layerNum][loc.x][loc.y] =
-          std::min<unsigned>(SIGNAL_MAX, pheromones[layerNum][loc.x][loc.y] +
-                                             centerIncreaseAmount);
+          std::min<unsigned>(SIGNAL_MAX, pheromones[layerNum][loc.x][loc.y] + centerIncreaseAmount);
     }
   }
 }

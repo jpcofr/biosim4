@@ -71,7 +71,7 @@ if(USE_FETCHCONTENT_OPENCV)
     message(STATUS "Building OpenCV from source via FetchContent...")
     message(STATUS "  This will take 30-60 minutes on first build")
     message(STATUS "  Subsequent builds will be fast (cached)")
-    
+
     # Configure minimal OpenCV build
     set(BUILD_LIST "core,imgproc,highgui,videoio,video,imgcodecs" CACHE STRING "" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -83,18 +83,18 @@ if(USE_FETCHCONTENT_OPENCV)
     set(BUILD_opencv_python2 OFF CACHE BOOL "" FORCE)
     set(BUILD_opencv_python3 OFF CACHE BOOL "" FORCE)
     set(BUILD_opencv_java OFF CACHE BOOL "" FORCE)
-    
+
     # Enable video support
     set(WITH_FFMPEG ON CACHE BOOL "" FORCE)
     set(WITH_AVFOUNDATION ON CACHE BOOL "" FORCE)
     set(WITH_OPENMP ON CACHE BOOL "" FORCE)
     set(WITH_PNG ON CACHE BOOL "" FORCE)
     set(WITH_JPEG ON CACHE BOOL "" FORCE)
-    
+
     # Disable GUI
     set(WITH_QT OFF CACHE BOOL "" FORCE)
     set(WITH_GTK OFF CACHE BOOL "" FORCE)
-    
+
     FetchContent_Declare(
         opencv
         GIT_REPOSITORY https://github.com/opencv/opencv.git
@@ -102,24 +102,24 @@ if(USE_FETCHCONTENT_OPENCV)
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
     )
-    
+
     FetchContent_MakeAvailable(opencv)
-    
+
     set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_videoio opencv_video opencv_imgcodecs)
     include_directories(${opencv_SOURCE_DIR}/include ${opencv_BINARY_DIR})
-    
+
 else()
     # OPTION B: Use Homebrew OpenCV (RECOMMENDED - fast setup)
     message(STATUS "Using Homebrew OpenCV...")
     message(STATUS "  If not installed: brew install opencv")
-    
+
     # Force use of Homebrew OpenCV by setting explicit paths
     # This prevents CMake from finding incomplete custom builds
     set(OpenCV_DIR "/opt/homebrew/lib/cmake/opencv4" CACHE PATH "Path to OpenCV config" FORCE)
-    
+
     # Use Homebrew's OpenCV
     find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui videoio video imgcodecs)
-    
+
     if(OpenCV_FOUND)
         message(STATUS "  ✓ Found OpenCV ${OpenCV_VERSION}")
         message(STATUS "  ✓ Include: ${OpenCV_INCLUDE_DIRS}")

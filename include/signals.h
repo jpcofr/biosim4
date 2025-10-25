@@ -1,12 +1,12 @@
-#ifndef SIGNALS_H_INCLUDED
-#define SIGNALS_H_INCLUDED
+#ifndef BIOSIM4_INCLUDE_SIGNALS_H_
+#define BIOSIM4_INCLUDE_SIGNALS_H_
 
 // Container for pheromones.
 
+#include "basicTypes.h"
+
 #include <cstdint>
 #include <vector>
-
-#include "basicTypes.h"
 
 namespace BioSim {
 
@@ -28,8 +28,7 @@ struct Signals {
   };
 
   struct Layer {
-    Layer(uint16_t numCols, uint16_t numRows)
-        : data{std::vector<Column>(numCols, Column(numRows))} {}
+    Layer(uint16_t numCols, uint16_t numRows) : data{std::vector<Column>(numCols, Column(numRows))} {}
     Column& operator[](uint16_t colNum) { return data[colNum]; }
     const Column& operator[](uint16_t colNum) const { return data[colNum]; }
     void zeroFill() {
@@ -48,11 +47,10 @@ struct Signals {
 
   Layer& operator[](uint16_t layerNum) { return data[layerNum]; }
   const Layer& operator[](uint16_t layerNum) const { return data[layerNum]; }
-  uint8_t getMagnitude(uint16_t layerNum, Coordinate loc) const {
-    return (*this)[layerNum][loc.x][loc.y];
-  }
+  uint8_t getMagnitude(uint16_t layerNum, Coordinate loc) const { return (*this)[layerNum][loc.x][loc.y]; }
   void zeroFill() {
-    for (Layer& layer : data) layer.zeroFill();
+    for (Layer& layer : data)
+      layer.zeroFill();
   }
 
  private:
@@ -61,4 +59,4 @@ struct Signals {
 
 }  // namespace BioSim
 
-#endif  // SIGNALS_H_INCLUDED
+#endif  // BIOSIM4_INCLUDE_SIGNALS_H_

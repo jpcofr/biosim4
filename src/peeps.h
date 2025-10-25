@@ -1,13 +1,13 @@
 #ifndef PEEPS_H_INCLUDED
 #define PEEPS_H_INCLUDED
 
-#include <cstdint>
-#include <vector>
-
 #include "basicTypes.h"
 #include "grid.h"
 #include "indiv.h"
 #include "params.h"
+
+#include <cstdint>
+#include <vector>
 
 namespace BioSim {
 
@@ -58,21 +58,17 @@ class Peeps {
  public:
   Peeps();  // makes zero individuals
   void initialize(unsigned population);
-  void queueForDeath(const Individual &);
+  void queueForDeath(const Individual&);
   void drainDeathQueue();
-  void queueForMove(const Individual &, Coordinate newLoc);
+  void queueForMove(const Individual&, Coordinate newLoc);
   void drainMoveQueue();
   unsigned deathQueueSize() const { return deathQueue.size(); }
   // getIndiv() does no error checking -- check first that loc is occupied
-  Individual &getIndiv(Coordinate loc) { return individuals[grid.at(loc)]; }
-  const Individual &getIndiv(Coordinate loc) const {
-    return individuals[grid.at(loc)];
-  }
+  Individual& getIndiv(Coordinate loc) { return individuals[grid.at(loc)]; }
+  const Individual& getIndiv(Coordinate loc) const { return individuals[grid.at(loc)]; }
   // Direct access:
-  Individual &operator[](uint16_t index) { return individuals[index]; }
-  Individual const &operator[](uint16_t index) const {
-    return individuals[index];
-  }
+  Individual& operator[](uint16_t index) { return individuals[index]; }
+  Individual const& operator[](uint16_t index) const { return individuals[index]; }
 
  private:
   std::vector<Individual> individuals;  // Index value 0 is reserved

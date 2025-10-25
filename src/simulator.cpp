@@ -3,6 +3,8 @@
 
 #include "simulator.h"
 
+#include "imageWriter.h"
+
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -10,16 +12,13 @@
 #include <iostream>
 #include <utility>
 
-#include "imageWriter.h"
-
 /// @brief
 namespace BioSim {
 
 extern void initializeGeneration0();
 extern unsigned spawnNewGeneration(unsigned generation, unsigned murderCount);
 extern void displaySampleGenomes(unsigned count);
-extern void executeActions(
-    Individual &indiv, std::array<float, Action::NUM_ACTIONS> &actionLevels);
+extern void executeActions(Individual& indiv, std::array<float, Action::NUM_ACTIONS>& actionLevels);
 extern void endOfSimulationStep(unsigned simStep, unsigned generation);
 extern void endOfGeneration(unsigned generation);
 
@@ -42,7 +41,7 @@ ImageWriter imageWriter;
 ParamManager paramManager;
 
 /// @brief Parameter manager
-const Params &parameterMngrSingleton{paramManager.getParamRef()};
+const Params& parameterMngrSingleton{paramManager.getParamRef()};
 
 /**
  * @brief Execute one simulation step for one individual.
@@ -70,8 +69,7 @@ const Params &parameterMngrSingleton{paramManager.getParamRef()};
  * @param individual: The individual to simulate.
  * @param simulationStep The current simulation step
  */
-void simulationStepOneIndividual(Individual &individual,
-                                 unsigned simulationStep) {
+void simulationStepOneIndividual(Individual& individual, unsigned simulationStep) {
   ++individual.age;
   auto actionLevels = individual.feedForward(simulationStep);
   executeActions(individual, actionLevels);
@@ -107,7 +105,7 @@ The threads are:
     imageWriter       - saves image frames used to make a movie (possibly not
 threaded due to unresolved bugs when threaded)
 ********************************************************************************/
-void simulator(int argc, char **argv) {
+void simulator(int argc, char** argv) {
   printSensorsActions();  // show the agents' capabilities
 
   paramManager.setDefaults();
@@ -119,13 +117,10 @@ void simulator(int argc, char **argv) {
 
   randomUint.initialize();
 
-  grid.initialize(parameterMngrSingleton.gridSize_X,
-                  parameterMngrSingleton.gridSize_Y);
-  pheromones.initialize(parameterMngrSingleton.signalLayers,
-                        parameterMngrSingleton.gridSize_X,
+  grid.initialize(parameterMngrSingleton.gridSize_X, parameterMngrSingleton.gridSize_Y);
+  pheromones.initialize(parameterMngrSingleton.signalLayers, parameterMngrSingleton.gridSize_X,
                         parameterMngrSingleton.gridSize_Y);
-  imageWriter.init(parameterMngrSingleton.signalLayers,
-                   parameterMngrSingleton.gridSize_X,
+  imageWriter.init(parameterMngrSingleton.signalLayers, parameterMngrSingleton.gridSize_X,
                    parameterMngrSingleton.gridSize_Y);
   peeps.initialize(parameterMngrSingleton.population);  // the peeps themselves
 
@@ -136,25 +131,19 @@ void simulator(int argc, char **argv) {
 
 // Ensure shared data remains unmodified within parallel regions. Perform
 // modifications in single-threaded sections.
-#pragma omp parallel num_threads(parameterMngrSingleton.numThreads) default( \
-        shared)
+#pragma omp parallel num_threads(parameterMngrSingleton.numThreads) default(shared)
   {
-    randomUint
-        .initialize();  // seed the RNG, each thread has a private instance
+    randomUint.initialize();  // seed the RNG, each thread has a private instance
 
     // Outer loop: process generations
-    while (runMode == RunMode::RUN &&
-           currentGeneration < parameterMngrSingleton.maxGenerations) {
+    while (runMode == RunMode::RUN && currentGeneration < parameterMngrSingleton.maxGenerations) {
 #pragma omp single
       murderCount = 0;
 
-      for (unsigned simulationStep = 0;
-           simulationStep < parameterMngrSingleton.stepsPerGeneration;
-           ++simulationStep) {
+      for (unsigned simulationStep = 0; simulationStep < parameterMngrSingleton.stepsPerGeneration; ++simulationStep) {
 // multithreaded loop: index 0 is reserved, start at 1
 #pragma omp for schedule(auto)
-        for (unsigned individual = 1;
-             individual <= parameterMngrSingleton.population; ++individual)
+        for (unsigned individual = 1; individual <= parameterMngrSingleton.population; ++individual)
           if (peeps[individual].alive)
             simulationStepOneIndividual(peeps[individual], simulationStep);
 
@@ -171,11 +160,8 @@ void simulator(int argc, char **argv) {
       {
         endOfGeneration(currentGeneration);
         paramManager.updateFromConfigFile(currentGeneration + 1);
-        unsigned numberSurvivors =
-            spawnNewGeneration(currentGeneration, murderCount);
-        if (numberSurvivors > 0 &&
-            (currentGeneration % parameterMngrSingleton.genomeAnalysisStride ==
-             0))
+        unsigned numberSurvivors = spawnNewGeneration(currentGeneration, murderCount);
+        if (numberSurvivors > 0 && (currentGeneration % parameterMngrSingleton.genomeAnalysisStride == 0))
           displaySampleGenomes(parameterMngrSingleton.displaySampleGenomes);
 
         if (numberSurvivors == 0)

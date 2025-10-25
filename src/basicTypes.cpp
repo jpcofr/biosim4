@@ -20,13 +20,13 @@ constexpr Compass SW = BioSim::Compass::SW;
 constexpr Compass W = BioSim::Compass::W;
 constexpr Compass C = BioSim::Compass::CENTER;
 
-const Dir rotations[72] = {
-    SW, W, NW, N,  NE, E,  SE, S,  S, SW, W,  NW, N,  NE, E,  SE, SE, S,
-    SW, W, NW, N,  NE, E,  W,  NW, N, NE, E,  SE, S,  SW, C,  C,  C,  C,
-    C,  C, C,  C,  E,  SE, S,  SW, W, NW, N,  NE, NW, N,  NE, E,  SE, S,
-    SW, W, N,  NE, E,  SE, S,  SW, W, NW, NE, E,  SE, S,  SW, W,  NW, N};
+const Dir rotations[72] = {SW, W,  NW, N,  NE, E,  SE, S,  S, SW, W, NW, N, NE, E, SE, SE, S,  SW, W,  NW, N,  NE, E,
+                           W,  NW, N,  NE, E,  SE, S,  SW, C, C,  C, C,  C, C,  C, C,  E,  SE, S,  SW, W,  NW, N,  NE,
+                           NW, N,  NE, E,  SE, S,  SW, W,  N, NE, E, SE, S, SW, W, NW, NE, E,  SE, S,  SW, W,  NW, N};
 
-Dir Dir::rotate(int n) const { return rotations[asInt() * 8 + (n & 7)]; }
+Dir Dir::rotate(int n) const {
+  return rotations[asInt() * 8 + (n & 7)];
+}
 
 /*
     A normalized Coordinate is a Coordinate with x and y == -1, 0, or 1.
@@ -59,9 +59,13 @@ const Coordinate NormalizedCoords[9] = {
     Coordinate(1, 1)     // NE
 };
 
-Coordinate Dir::asNormalizedCoord() const { return NormalizedCoords[asInt()]; }
+Coordinate Dir::asNormalizedCoord() const {
+  return NormalizedCoords[asInt()];
+}
 
-Polar Dir::asNormalizedPolar() const { return Polar{1, dir9}; }
+Polar Dir::asNormalizedPolar() const {
+  return Polar{1, dir9};
+}
 
 /*
     A normalized Coordinate has x and y == -1, 0, or 1.
@@ -70,7 +74,9 @@ Polar Dir::asNormalizedPolar() const { return Polar{1, dir9}; }
     We'll convert the Coordinate into a Dir, then convert Dir to normalized
    Coord.
 */
-Coordinate Coordinate::normalize() const { return asDir().asNormalizedCoord(); }
+Coordinate Coordinate::normalize() const {
+  return asDir().asNormalizedCoord();
+}
 
 // Effectively, we want to check if a coordinate lies in a 45 degree region
 // (22.5 degrees each side) centered on each compass direction. By first
@@ -96,7 +102,9 @@ Dir Coordinate::asDir() const {
   return conversion[(yp > 0) * 8 + (xp > 0) * 4 + (yp > xp) * 2 + (yp >= -xp)];
 }
 
-Polar Coordinate::asPolar() const { return Polar{(int)length(), asDir()}; }
+Polar Coordinate::asPolar() const {
+  return Polar{(int)length(), asDir()};
+}
 
 /*
     Compass values:
@@ -130,8 +138,7 @@ Coordinate Polar::asCoord() const {
   // we'd then also subtract it, but we don't need to be that precise.
 
   int64_t temp = ((int64_t)mag >> 32) ^ ((1LL << 31) - 1);
-  len = (len + temp) /
-        (1LL << 32);  // Divide to make sure we get an arithmetic shift
+  len = (len + temp) / (1LL << 32);  // Divide to make sure we get an arithmetic shift
 
   return NormalizedCoords[dir.asInt()] * len;
 }
@@ -139,8 +146,7 @@ Coordinate Polar::asCoord() const {
 // returns -1.0 (opposite directions) .. +1.0 (same direction)
 // returns 1.0 if either vector is (0,0)
 float Coordinate::raySameness(Coordinate other) const {
-  int64_t mag =
-      ((int64_t)x * x + y * y) * (other.x * other.x + other.y * other.y);
+  int64_t mag = ((int64_t)x * x + y * y) * (other.x * other.x + other.y * other.y);
   if (mag == 0) {
     return 1.0;  // anything is "same" as zero vector
   }

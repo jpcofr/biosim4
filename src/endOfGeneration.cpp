@@ -1,13 +1,13 @@
 // endOfGeneration.cpp
 
+#include "imageWriter.h"
+#include "simulator.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <utility>
-
-#include "simulator.h"
-#include "imageWriter.h"
 
 namespace BioSim {
 
@@ -16,21 +16,18 @@ namespace BioSim {
 
 void endOfGeneration(unsigned generation) {
   {
-    if (parameterMngrSingleton.saveVideo &&
-        ((generation % parameterMngrSingleton.videoStride) == 0 ||
-         generation <= parameterMngrSingleton.videoSaveFirstFrames ||
-         (generation >=
-              parameterMngrSingleton.parameterChangeGenerationNumber &&
-          generation <= parameterMngrSingleton.parameterChangeGenerationNumber +
-                            parameterMngrSingleton.videoSaveFirstFrames))) {
+    if (parameterMngrSingleton.saveVideo && ((generation % parameterMngrSingleton.videoStride) == 0 ||
+                                             generation <= parameterMngrSingleton.videoSaveFirstFrames ||
+                                             (generation >= parameterMngrSingleton.parameterChangeGenerationNumber &&
+                                              generation <= parameterMngrSingleton.parameterChangeGenerationNumber +
+                                                                parameterMngrSingleton.videoSaveFirstFrames))) {
       imageWriter.saveGenerationVideo(generation);
     }
   }
 
   {
     if (parameterMngrSingleton.updateGraphLog &&
-        (generation == 1 ||
-         ((generation % parameterMngrSingleton.updateGraphLogStride) == 0))) {
+        (generation == 1 || ((generation % parameterMngrSingleton.updateGraphLogStride) == 0))) {
 #pragma GCC diagnostic ignored "-Wunused-result"
       std::system(parameterMngrSingleton.graphLogUpdateCommand.c_str());
     }

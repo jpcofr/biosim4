@@ -18,7 +18,7 @@ case $METHOD in
     asan)
         echo "Method: AddressSanitizer (ASan)"
         echo ""
-        
+
         # Check if binary exists
         if [ ! -f "$BINARY" ]; then
             echo "❌ Binary not found. Building with ASan..."
@@ -29,15 +29,15 @@ case $METHOD in
             ninja
             cd ..
         fi
-        
+
         echo "Running simulator with leak detection..."
         echo "Config: $TEST_CONFIG"
         echo ""
-        
+
         # Run with ASan options and suppressions for macOS system libraries
         export ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=0:color=always"
         export LSAN_OPTIONS="suppressions=lsan.supp:report_objects=1"
-        
+
         if "$BINARY" "$TEST_CONFIG"; then
             echo ""
             echo "✅ No memory leaks detected!"
@@ -47,11 +47,11 @@ case $METHOD in
             exit 1
         fi
         ;;
-        
+
     leaks)
         echo "Method: macOS leaks command"
         echo ""
-        
+
         if [ ! -f "$BINARY" ]; then
             echo "❌ Binary not found. Building with debug symbols..."
             rm -rf "$BUILD_DIR"
@@ -61,18 +61,18 @@ case $METHOD in
             ninja
             cd ..
         fi
-        
+
         echo "Running simulator with leaks monitoring..."
         echo "Config: $TEST_CONFIG"
         echo ""
-        
+
         leaks --atExit -- "$BINARY" "$TEST_CONFIG"
         ;;
-        
+
     instruments)
         echo "Method: Xcode Instruments"
         echo ""
-        
+
         if [ ! -f "$BINARY" ]; then
             echo "❌ Binary not found. Building with debug symbols..."
             rm -rf "$BUILD_DIR"
@@ -82,14 +82,14 @@ case $METHOD in
             ninja
             cd ..
         fi
-        
+
         echo "Launching Instruments..."
         echo "Note: This will open Xcode Instruments GUI"
         echo ""
-        
+
         instruments -t Leaks "$BINARY" "$TEST_CONFIG"
         ;;
-        
+
     *)
         echo "❌ Unknown method: $METHOD"
         echo ""

@@ -1,7 +1,7 @@
 # biosim4 - Enhanced Fork
 
-> **Forked from [davidrmiller/biosim4](https://github.com/davidrmiller/biosim4)**  
-> Original author: David R. Miller | Fork enhancements: Juan Pablo Contreras Franco  
+> **Forked from [davidrmiller/biosim4](https://github.com/davidrmiller/biosim4)**
+> Original author: David R. Miller | Fork enhancements: Juan Pablo Contreras Franco
 > Developed with AI pair programming assistance
 
 ## About This Fork
@@ -18,7 +18,7 @@ in a 2D grid world.
 
 ### Fork Goals and Enhancements
 - ✅ Port code to C++20/23 standards
-- ✅ Enforce consistent code conventions
+- ✅ Enforce consistent code conventions (clang-format + pre-commit hooks)
 - ✅ Comprehensive code documentation
 - ✅ Refactor for improved maintainability
 - ✅ Add unit tests (Google Test framework)
@@ -252,7 +252,13 @@ Copy the directory structure to a location of your choice.
 brew install cmake ninja llvm libomp opencv
 ```
 
-2. Build with Ninja:
+2. Set up code formatting (optional but recommended):
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+3. Build with Ninja:
 ```bash
 rm -rf build/
 mkdir build && cd build
@@ -260,10 +266,15 @@ cmake -G Ninja ..
 ninja
 ```
 
-3. Run:
+4. Run:
 ```bash
 ./src/biosim4
 ```
+
+**Note on formatting**:
+- `.editorconfig` provides automatic formatting hints for most editors (no plugins needed)
+- Pre-commit hooks enforce C++ and Python formatting before commits (requires setup)
+- See `doc/CODE_FORMATTING_MIGRATION.md` for complete details
 
 #### Self-Contained Build with FetchContent
 
@@ -289,7 +300,7 @@ ninja
 Configure with `-D<OPTION>=<VALUE>`:
 
 | Option                    | Default | Description                                          |
-|---------------------------|---------|------------------------------------------------------|
+| ------------------------- | ------- | ---------------------------------------------------- |
 | `USE_FETCHCONTENT_OPENCV` | `OFF`   | Build OpenCV from source                             |
 | `ENABLE_VIDEO_GENERATION` | `ON`    | Enable .avi video file generation                    |
 | `ENABLE_SANITIZERS`       | `OFF`   | Enable AddressSanitizer & UndefinedBehaviorSanitizer |

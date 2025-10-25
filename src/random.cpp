@@ -10,14 +10,14 @@
 // "deterministic" and "RNGSeed" determine whether to initialize the RNG with
 // a user-defined deterministic seed or with a random seed.
 
+#include "omp.h"
+#include "simulator.h"
+
 #include <cassert>
 #include <chrono>
 #include <climits>
 #include <cmath>
 #include <random>
-
-#include "omp.h"
-#include "simulator.h"
 
 namespace BioSim {
 

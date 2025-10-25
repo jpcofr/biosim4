@@ -1,14 +1,14 @@
-#ifndef INDIV_H_INCLUDED
-#define INDIV_H_INCLUDED
+#ifndef BIOSIM4_INCLUDE_INDIV_H_
+#define BIOSIM4_INCLUDE_INDIV_H_
 
 // Indiv is the structure that represents one individual agent.
+
+#include "basicTypes.h"
+#include "genome-neurons.h"
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
-
-#include "basicTypes.h"
-#include "genome-neurons.h"
 
 namespace BioSim {
 
@@ -22,16 +22,15 @@ struct Individual {
   /// @brief Tracks simulation steps
   unsigned age;
   Genome genome;
-  NeuralNet nnet;        // derived from .genome
-  float responsiveness;  // 0.0..1.0 (0 is like asleep)
-  unsigned oscPeriod;  // 2..4*p.stepsPerGeneration (TBD, see executeActions())
+  NeuralNet nnet;          // derived from .genome
+  float responsiveness;    // 0.0..1.0 (0 is like asleep)
+  unsigned oscPeriod;      // 2..4*p.stepsPerGeneration (TBD, see executeActions())
   unsigned longProbeDist;  // distance for long forward probe for obstructions
   Dir lastMoveDir;         // direction of last movement
   unsigned challengeBits;  // modified when the indiv accomplishes some task
-  std::array<float, Action::NUM_ACTIONS> feedForward(
-      unsigned simStep);  // reads sensors, returns actions
+  std::array<float, Action::NUM_ACTIONS> feedForward(unsigned simStep);  // reads sensors, returns actions
   float getSensor(Sensor, unsigned simStep) const;
-  void initialize(uint16_t index, Coordinate loc, Genome &&genome);
+  void initialize(uint16_t index, Coordinate loc, Genome&& genome);
   void createWiringFromGenome();  // creates .nnet member from .genome member
   void printNeuralNet() const;
   void printIGraphEdgeList() const;
@@ -40,4 +39,4 @@ struct Individual {
 
 }  // namespace BioSim
 
-#endif  // INDIV_H_INCLUDED
+#endif  // BIOSIM4_INCLUDE_INDIV_H_
