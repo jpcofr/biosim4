@@ -1,0 +1,72 @@
+BIOSIM4 - ATTRIBUTION AND NOTICES
+================================================================================
+
+This project is a fork of biosim4 by David R. Miller
+Original repository: https://github.com/davidrmiller/biosim4
+
+================================================================================
+ORIGINAL WORK
+================================================================================
+
+Copyright (c) 2021-2022 David R. Miller and other contributors
+Licensed under the MIT License
+
+The original biosim4 project is a biological evolution simulator that models
+creatures with neural networks evolving through natural selection in a 2D
+grid world. The original work includes the core simulation engine, genome
+representation, neural network implementation, and visualization system.
+
+Original project video: https://www.youtube.com/watch?v=N3tRFayqVtk
+
+================================================================================
+DERIVATIVE WORK - THIS FORK
+================================================================================
+
+Copyright (c) 2025 Juan Pablo Contreras Franco
+Licensed under the MIT License (same as original)
+
+This fork contains modifications and enhancements to the original biosim4
+codebase, developed with AI pair programming assistance.
+
+Key modifications include:
+- Modernization to C++20/23 standards
+- Enhanced code structure and organization
+- Comprehensive documentation and comments
+- Improved build system (CMake-focused)
+- Memory leak detection and fixes
+- Unit testing framework integration
+- Refactored animation/video generation system
+- Build environment compatibility improvements
+- Code convention enforcement
+
+Development Methodology:
+This fork was developed using AI-assisted pair programming techniques,
+combining human architectural decisions with AI-powered code analysis,
+refactoring suggestions, and implementation support.
+
+================================================================================
+LICENSE TERMS
+================================================================================
+
+Both the original work and this derivative work are distributed under the
+MIT License. See the LICENSE file for complete license terms.
+
+The MIT License permits use, modification, distribution, and commercial use
+with the sole requirement of preserving copyright notices and disclaimers.
+
+================================================================================
+ACKNOWLEDGMENTS
+================================================================================
+
+- David R. Miller: Original biosim4 concept, design, and implementation
+- AI Pair Programming: Claude (Anthropic) - Development assistance
+- Open Source Community: Contributors to dependencies (OpenCV, OpenMP, etc.)
+
+================================================================================
+CONTACT AND CONTRIBUTIONS
+================================================================================
+
+Original Project: https://github.com/davidrmiller/biosim4
+This Fork: https://github.com/jpcofr/biosim4
+
+Contributions, issues, and feedback are welcome through GitHub.

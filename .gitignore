@@ -1,4 +1,25 @@
+# Build artifacts
 obj/
-tools/*.svg
 build/
+
+# Binary output directories (ignore contents but keep structure)
+bin/Debug/*
+!bin/Debug/.gitkeep
+bin/Release/*
+!bin/Release/.gitkeep
+
+# Generated output (images, videos, logs)
+output/
+
+# Generated graphics
+tools/*.svg
+
+# IDE and editor files
 .vscode/
+.DS_Store
+
+# Documentation (local only, NOT test docs)
+# Note: tests/docs/ is tracked for test-related documentation
+.github/
+!.github/copilot-instructions.md
+doc/
