@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "imageWriter.h"
 #include "simulator.h"
 
 namespace BioSim {
@@ -83,7 +84,7 @@ void endOfSimulationStep(unsigned simStep, unsigned generation) {
 
   peeps.drainDeathQueue();
   peeps.drainMoveQueue();
-  pheromones.fade(0);  // takes layerNum  todo!!!
+  pheromones.fade(0);  // takes layerNum  TODO!!!
 
   // saveVideoFrameSync() is the synchronous version of saveVideFrame()
   if (parameterMngrSingleton.saveVideo &&
@@ -92,6 +93,11 @@ void endOfSimulationStep(unsigned simStep, unsigned generation) {
        (generation >= parameterMngrSingleton.parameterChangeGenerationNumber &&
         generation <= parameterMngrSingleton.parameterChangeGenerationNumber +
                           parameterMngrSingleton.videoSaveFirstFrames))) {
+    if (!imageWriter.saveVideoFrameSync(simStep, generation,
+                                        parameterMngrSingleton.challenge,
+                                        parameterMngrSingleton.barrierType)) {
+      std::cout << "imageWriter busy" << std::endl;
+    }
   }
 }
 

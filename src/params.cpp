@@ -16,7 +16,7 @@
 //    2. Add a member and its default value to privParams in ParamManager::setDefaults()
 //          in params.cpp.
 //    3. Add an else clause to ParamManager::ingestParameter() in params.cpp.
-//    4. Add a line to the user's parameter file (default name biosim4.ini)
+//    4. Add a line to the user's parameter file (default name config/biosim4.ini)
 
 namespace BioSim {
 
@@ -29,8 +29,8 @@ void ParamManager::setDefaults()
     privParams.genomeInitialLengthMin = 24;
     privParams.genomeInitialLengthMax = 24;
     privParams.genomeMaxLength = 300;
-    privParams.logDir = "./logs/";
-    privParams.imageDir = "./images/";
+    privParams.logDir = "./output/logs/";
+    privParams.imageDir = "./output/images/";
     privParams.population = 3000;
     privParams.stepsPerGeneration = 300;
     privParams.maxGenerations = 200000;
@@ -55,7 +55,7 @@ void ParamManager::setDefaults()
     privParams.videoStride = 25;
     privParams.videoSaveFirstFrames = 2;
     privParams.displayScale = 8;
-    privParams.agentSize = 4;
+    privParams.agentSize = 2;
     privParams.genomeAnalysisStride = privParams.videoStride;
     privParams.displaySampleGenomes = 5;
     privParams.genomeComparisonMethod = 1;

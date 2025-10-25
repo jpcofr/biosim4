@@ -38,7 +38,7 @@ typedef std::list<Gene> ConnectionList;
 
 // Returns by value a single gene with random members.
 // See genome.h for the width of the members.
-// ToDo: don't assume the width of the members in gene.
+// TODO don't assume the width of the members in gene.
 Gene makeRandomGene() {
   Gene gene;
 

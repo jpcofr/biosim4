@@ -122,7 +122,7 @@ float hammingDistanceBytes(const Genome &genome1, const Genome &genome2) {
 
 // Returns 0.0..1.0
 //
-// ToDo: optimize by approximation for long genomes
+// TODO optimize by approximation for long genomes
 float genomeSimilarity(const Genome &g1, const Genome &g2) {
   switch (parameterMngrSingleton.genomeComparisonMethod) {
     case 0:
@@ -146,7 +146,7 @@ float geneticDiversity() {
   // count limits the number of genomes sampled for performance reasons.
   unsigned count = std::min(
       1000U,
-      parameterMngrSingleton.population);  // todo: !!! p.analysisSampleSize;
+      parameterMngrSingleton.population);  // TODO p.analysisSampleSize;
   int numSamples = 0;
   float similaritySum = 0.0f;
 

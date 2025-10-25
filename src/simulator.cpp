@@ -6,8 +6,11 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <utility>
+
+#include "imageWriter.h"
 
 /// @brief
 namespace BioSim {
@@ -30,6 +33,9 @@ Signals pheromones;
 
 /// @brief The container of all the individuals in the population
 Peeps peeps;
+
+/// @brief Image writer for generating video frames
+ImageWriter imageWriter;
 
 /// @brief The paramManager maintains a private copy of the parameter values,
 /// and a copy is available read-only singleton p.
@@ -83,7 +89,7 @@ Main simulator thread. This is the top-level entry point of the simulator.
 - SimStep resets; new generation begins
 
 The paramManager manages all the simulator parameters. It starts with defaults,
-then keeps them updated as the config file (biosim4.ini) changes.
+then keeps them updated as the config file (config/biosim4.ini) changes.
 
 The main simulator-wide data structures are:
     grid    - where the agents live (identified by their non-zero index). 0
@@ -105,7 +111,10 @@ void simulator(int argc, char **argv) {
   printSensorsActions();  // show the agents' capabilities
 
   paramManager.setDefaults();
-  paramManager.registerConfigFile(argc > 1 ? argv[1] : "biosim4.ini");
+  // Try config directory first, then fall back to root directory for backwards compatibility
+  const char* configFile = argc > 1 ? argv[1] : 
+    (std::filesystem::exists("config/biosim4.ini") ? "config/biosim4.ini" : "biosim4.ini");
+  paramManager.registerConfigFile(configFile);
   paramManager.updateFromConfigFile(0);
   paramManager.checkParameters();  // check and report any problems
 
@@ -116,6 +125,9 @@ void simulator(int argc, char **argv) {
   pheromones.initialize(parameterMngrSingleton.signalLayers,
                         parameterMngrSingleton.gridSize_X,
                         parameterMngrSingleton.gridSize_Y);
+  imageWriter.init(parameterMngrSingleton.signalLayers,
+                   parameterMngrSingleton.gridSize_X,
+                   parameterMngrSingleton.gridSize_Y);
   peeps.initialize(parameterMngrSingleton.population);  // the peeps themselves
 
   unsigned currentGeneration = 0;

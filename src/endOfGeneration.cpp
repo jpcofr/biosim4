@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "simulator.h"
+#include "imageWriter.h"
 
 namespace BioSim {
 
@@ -22,6 +23,7 @@ void endOfGeneration(unsigned generation) {
               parameterMngrSingleton.parameterChangeGenerationNumber &&
           generation <= parameterMngrSingleton.parameterChangeGenerationNumber +
                             parameterMngrSingleton.videoSaveFirstFrames))) {
+      imageWriter.saveGenerationVideo(generation);
     }
   }
 

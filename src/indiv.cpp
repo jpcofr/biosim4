@@ -18,7 +18,7 @@ void Individual::initialize(uint16_t index_, Coordinate loc_,
   // birthLoc = loc_;
   grid.set(loc_, index_);
   age = 0;
-  oscPeriod = 34;  // ToDo !!! define a constant
+  oscPeriod = 34;  // TODO define a constant
   alive = true;
   lastMoveDir = Dir::random8();
   responsiveness = 0.5;  // range 0.0..1.0

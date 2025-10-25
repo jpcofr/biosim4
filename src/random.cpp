@@ -6,7 +6,7 @@
 // instantiate its own private instance. A side effect is that the object cannot
 // have a non-trivial ctor, so it has an initialize() member function that must
 // be called to seed the RNG instance, typically in simulator() in simulator.cpp
-// after the config parameters have been read. The biosim4.ini parameters named
+// after the config parameters have been read. The config/biosim4.ini parameters named
 // "deterministic" and "RNGSeed" determine whether to initialize the RNG with
 // a user-defined deterministic seed or with a random seed.
 

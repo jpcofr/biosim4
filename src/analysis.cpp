@@ -421,7 +421,7 @@ float averageGenomeLength() {
 
 // The epoch log contains one line per generation in a format that can be
 // fed to graphlog.gp to produce a chart of the simulation progress.
-// ToDo: remove hardcoded filename.
+// TODO remove hardcoded filename.
 void appendEpochLog(unsigned generation, unsigned numberSurvivors,
                     unsigned murderCount) {
   std::ofstream foutput;

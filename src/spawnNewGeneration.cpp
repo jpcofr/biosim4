@@ -90,7 +90,7 @@ unsigned spawnNewGeneration(unsigned generation, unsigned murderCount) {
       std::pair<bool, float> passed = passedSurvivalCriterion(
           peeps[index], parameterMngrSingleton.challenge);
       // Save the parent genome if it results in valid neural connections
-      // ToDo: if the parents no longer need their genome record, we could
+      // TODO if the parents no longer need their genome record, we could
       // possibly do a move here instead of copy, although it's doubtful that
       // the optimization would be noticeable.
       if (passed.first && !peeps[index].nnet.connections.empty()) {
@@ -133,7 +133,7 @@ unsigned spawnNewGeneration(unsigned generation, unsigned murderCount) {
 
     if (considerKinship) {
       if (generation > generationToApplyKinship) {
-        // Todo: optimize!!!
+        // TODO optimize!!!
         float threshold = 0.7;
 
         std::vector<std::pair<uint16_t, float>> survivingKin;

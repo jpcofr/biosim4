@@ -11,7 +11,7 @@
 //    ParamManager::setDefault()
 //          in params.cpp.
 //    3. Add an else clause to ParamManager::ingestParameter() in params.cpp.
-//    4. Add a line to the user's parameter file (default name biosim4.ini)
+//    4. Add a line to the user's parameter file (default name config/biosim4.ini)
 
 namespace BioSim {
 
