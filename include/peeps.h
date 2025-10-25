@@ -1,6 +1,15 @@
 #ifndef BIOSIM4_INCLUDE_PEEPS_H_
 #define BIOSIM4_INCLUDE_PEEPS_H_
 
+/**
+ * @file peeps.h
+ * @brief Population manager for Individual agents
+ *
+ * Provides the Peeps class which manages all Individual instances in the simulation,
+ * tracking their locations in the Grid and coordinating lifecycle events (spawn,
+ * move, death).
+ */
+
 #include "basicTypes.h"
 #include "grid.h"
 #include "indiv.h"
@@ -14,66 +23,126 @@ namespace BioSim {
 struct Individual;
 extern class Grid grid;
 
-// This class keeps track of alive and dead Indiv's and where they
-// are in the Grid.
-// Peeps allows spawning a live Indiv at a random or specific location
-// in the grid, moving Indiv's from one grid location to another, and
-// killing any Indiv.
-// All the Indiv instances, living and dead, are stored in the private
-// .individuals member. The .cull() function will remove dead members and
-// replace their slots in the .individuals container with living members
-// from the end of the container for compacting the container.
-// Each Indiv has an identifying index in the range 1..0xfffe that is
-// stored in the Grid at the location where the Indiv resides, such that
-// a Grid element value n refers to .individuals[n]. Index value 0 is
-// reserved, i.e., .individuals[0] is not a valid individual.
-// This class does not manage properties inside Indiv except for the
-// Indiv's location in the grid and its aliveness.
-
 /**
  * @class Peeps
- * @brief Manages alive and dead Individual instances and their positions in the
- * Grid.
+ * @brief Container and manager for all Individual agents in the simulation
  *
- * Peeps provides functionality for:
- * - Spawning a live Individual at a random or specific location in the grid.
- * - Moving Individuals from one grid location to another.
- * - Killing any Individual.
+ * Peeps maintains a vector of all Individual instances (both alive and dead) and
+ * coordinates their interactions with the Grid. Key responsibilities:
  *
- * All Individual instances, living and dead, are stored in the private
- * 'individuals' member. The 'cull()' function removes dead members and replaces
- * their slots in the 'individuals' container with living members from the end
- * of the container, compacting the container.
+ * - **Spawning**: Create new Individuals at random or specific locations
+ * - **Movement**: Move Individuals between grid cells (queued to avoid conflicts)
+ * - **Death**: Mark Individuals for removal (queued for thread-safe processing)
+ * - **Culling**: Remove dead Individuals and compact the container
  *
- * Each Individual has an identifying index in the range 1..0xfffe, stored in
- * the Grid at the location where the Individual resides. Grid element value 'n'
- * refers to 'individuals[n]'. Index value 0 is reserved, i.e., 'individuals[0]'
- * is not a valid individual.
+ * ## Index Management
+ * Each Individual has a unique index in range 1..0xfffe stored in the Grid at
+ * the Individual's location. Grid cell value n refers to individuals[n].
+ * **Index 0 is reserved** and individuals[0] is invalid.
  *
- * Peeps does not manage properties inside Individual instances, except for the
- * Individual's location in the grid and its aliveness.
+ * ## Queue Pattern
+ * Death and movement operations are queued during simulation steps and drained
+ * at safe synchronization points to avoid race conditions in parallel execution.
+ *
+ * ## Scope
+ * Peeps manages only Individual location and aliveness. It does not modify
+ * other Individual properties (genome, neural net, sensors, etc.).
  */
-
 class Peeps {
  public:
-  Peeps();  // makes zero individuals
+  /**
+   * @brief Construct empty Peeps container
+   *
+   * Creates container with zero individuals. Call initialize() before use.
+   */
+  Peeps();
+
+  /**
+   * @brief Initialize population with specified size
+   * @param population Number of Individuals to create
+   *
+   * Spawns population count of Individuals at random empty grid locations
+   * with random genomes.
+   */
   void initialize(unsigned population);
-  void queueForDeath(const Individual&);
+
+  /**
+   * @brief Queue an Individual for death
+   * @param indiv Individual to mark for death
+   *
+   * Adds Individual to death queue. Actual removal happens in drainDeathQueue().
+   * Thread-safe for concurrent queuing.
+   */
+  void queueForDeath(const Individual& indiv);
+
+  /**
+   * @brief Process all queued deaths
+   *
+   * Marks all queued Individuals as dead and clears their Grid locations.
+   * Should be called at simulation step boundaries.
+   */
   void drainDeathQueue();
-  void queueForMove(const Individual&, Coordinate newLoc);
+
+  /**
+   * @brief Queue an Individual to move to new location
+   * @param indiv Individual to move
+   * @param newLoc Destination coordinate
+   *
+   * Adds movement to queue. Actual move happens in drainMoveQueue().
+   * Thread-safe for concurrent queuing.
+   */
+  void queueForMove(const Individual& indiv, Coordinate newLoc);
+
+  /**
+   * @brief Process all queued movements
+   *
+   * Executes all pending movements, updating Grid and Individual locations.
+   * Should be called at simulation step boundaries.
+   */
   void drainMoveQueue();
+
+  /**
+   * @brief Get current death queue size
+   * @return Number of Individuals queued for death
+   */
   unsigned deathQueueSize() const { return deathQueue.size(); }
-  // getIndiv() does no error checking -- check first that loc is occupied
+
+  /**
+   * @brief Get Individual at grid location (non-const)
+   * @param loc Grid coordinate
+   * @return Reference to Individual
+   * @warning No bounds checking - ensure loc is occupied before calling
+   */
   Individual& getIndiv(Coordinate loc) { return individuals[grid.at(loc)]; }
+
+  /**
+   * @brief Get Individual at grid location (const)
+   * @param loc Grid coordinate
+   * @return const reference to Individual
+   * @warning No bounds checking - ensure loc is occupied before calling
+   */
   const Individual& getIndiv(Coordinate loc) const { return individuals[grid.at(loc)]; }
-  // Direct access:
+
+  /**
+   * @brief Direct access by index (non-const)
+   * @param index Individual index (1..0xfffe)
+   * @return Reference to Individual
+   * @warning Index 0 is reserved and invalid
+   */
   Individual& operator[](uint16_t index) { return individuals[index]; }
+
+  /**
+   * @brief Direct access by index (const)
+   * @param index Individual index (1..0xfffe)
+   * @return const reference to Individual
+   * @warning Index 0 is reserved and invalid
+   */
   Individual const& operator[](uint16_t index) const { return individuals[index]; }
 
  private:
-  std::vector<Individual> individuals;  // Index value 0 is reserved
-  std::vector<uint16_t> deathQueue;
-  std::vector<std::pair<uint16_t, Coordinate>> moveQueue;
+  std::vector<Individual> individuals;                     ///< All Individuals (index 0 reserved)
+  std::vector<uint16_t> deathQueue;                        ///< Indices of Individuals to kill
+  std::vector<std::pair<uint16_t, Coordinate>> moveQueue;  ///< (index, destination) pairs
 };
 
 }  // namespace BioSim

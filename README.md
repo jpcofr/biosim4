@@ -269,7 +269,7 @@ ninja
 
 4. Run:
 ```bash
-./src/biosim4
+./bin/biosim4
 ```
 
 **Note on formatting**:

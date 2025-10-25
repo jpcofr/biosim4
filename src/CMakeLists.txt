@@ -1,6 +1,8 @@
 
 FILE(GLOB MyCppSources ./*.cpp)
-FILE(GLOB MyCppheaders ./*.h)
+# Only include implementation-specific headers (CImg.h, imageWriter.h) from src/
+# All other headers are now in ../include/
+FILE(GLOB MyCppheaders ./CImg.h ./imageWriter.h)
 
 # Exclude old unit test files - now handled by tests/ directory
 list(REMOVE_ITEM MyCppSources
@@ -18,8 +20,11 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 
 add_executable(biosim4 ${MyCppSources} ${MyCppheaders})
 
-# Include OpenCV headers
-target_include_directories(biosim4 PRIVATE ${OpenCV_INCLUDE_DIRS})
+# Include directories: public headers from ../include/ and OpenCV
+target_include_directories(biosim4 PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${OpenCV_INCLUDE_DIRS}
+)
 
 # Link libraries
 target_link_libraries(biosim4 PUBLIC ${OpenCV_LIBS})
