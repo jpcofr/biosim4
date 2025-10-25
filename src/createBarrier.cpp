@@ -25,15 +25,15 @@ namespace BioSim {
  * @param barrierType Scenario identifier; see table below.
  *
  * @details
- * | Type | Description | Notes |
- * | ----:| ----------- | ----- |
- * | 0    | Empty arena | No barriers |
- * | 1    | Fixed vertical bar | Splits arena in half |
- * | 2    | Random vertical bar | Location changes per generation |
- * | 3    | Five staggered blocks | Alternating pillars forming corridors |
- * | 4    | Fixed horizontal bar | Positioned in upper half |
- * | 5    | Floating islands | Random circular islands (centers cached) |
- * | 6    | Evenly spaced spots | Aligned along central column |
+ * | Type | Description           | Notes                                    |
+ * |------|-----------------------|------------------------------------------|
+ * | 0    | Empty arena           | No barriers                              |
+ * | 1    | Fixed vertical bar    | Splits arena in half                     |
+ * | 2    | Random vertical bar   | Location changes per generation          |
+ * | 3    | Five staggered blocks | Alternating pillars forming corridors    |
+ * | 4    | Fixed horizontal bar  | Positioned in upper half                 |
+ * | 5    | Floating islands      | Random circular islands (centers cached) |
+ * | 6    | Evenly spaced spots   | Aligned along central column             |
  *
  * Each scenario uses helper lambdas to stamp cells and optionally record
  * centroids for later game logic (e.g., challenges that require visiting an

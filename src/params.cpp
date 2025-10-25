@@ -1,5 +1,15 @@
-/// params.cpp
-/// See params.h for notes.
+/**
+ * @file params.cpp
+ * @brief Implementation of parameter management system for BioSim4
+ *
+ * This file implements the ParamManager class which handles:
+ * - Loading and parsing configuration files (biosim4.ini)
+ * - Setting default parameter values
+ * - Validating parameter types and ranges
+ * - Supporting generation-specific parameter changes via @N syntax
+ *
+ * @see params.h for the 4-step process to add new parameters
+ */
 
 #include "params.h"
 
@@ -12,19 +22,36 @@
 #include <sstream>
 #include <string>
 
-/// To add a new parameter:
-///    1. Add a member to struct Params in params.h.
-///    2. Add a member and its default value to privParams in ParamManager::setDefaults()
-///          in params.cpp.
-///    3. Add an else clause to ParamManager::ingestParameter() in params.cpp.
-///    4. Add a line to the user's parameter file (default name config/biosim4.ini)
+/**
+ * @note Adding a New Parameter (4-step process):
+ *    1. Add a member to struct Params in params.h
+ *    2. Add a member and its default value to privParams in ParamManager::setDefaults()
+ *          in params.cpp
+ *    3. Add an else clause to ParamManager::ingestParameter() in params.cpp
+ *    4. Add a line to the user's parameter file (default name config/biosim4.ini)
+ */
 
 namespace BioSim {
 
+/**
+ * @brief Constructs ParamManager and initializes all parameters to defaults
+ *
+ * The constructor calls setDefaults() to populate privParams with
+ * hardcoded default values before any config file is loaded.
+ */
 ParamManager::ParamManager() {
   setDefaults();
 }
 
+/**
+ * @brief Sets all parameters to their default values
+ *
+ * This method initializes every member of privParams to a sensible default.
+ * These defaults are overridden by values from the config file when
+ * updateFromConfigFile() is called.
+ *
+ * @note When adding a new parameter, add its default value here (step 2)
+ */
 void ParamManager::setDefaults() {
   privParams.gridSize_X = 128;
   privParams.gridSize_Y = 128;
@@ -71,14 +98,38 @@ void ParamManager::setDefaults() {
   privParams.parameterChangeGenerationNumber = 0;
 }
 
+/**
+ * @brief Registers the configuration file path for later loading
+ *
+ * @param filename Path to the configuration file (typically config/biosim4.ini)
+ *
+ * This method stores the filename but does not load the file.
+ * Call updateFromConfigFile() to actually parse and apply the config.
+ */
 void ParamManager::registerConfigFile(const char* filename) {
   configFilename = std::string(filename);
 }
 
+/**
+ * @brief Checks if a string represents a valid unsigned integer
+ *
+ * @param s String to validate
+ * @return true if string contains only digits (0-9)
+ * @return false otherwise
+ */
 bool checkIfUint(const std::string& s) {
   return s.find_first_not_of("0123456789") == std::string::npos;
 }
 
+/**
+ * @brief Checks if a string represents a valid signed integer
+ *
+ * @param s String to validate
+ * @return true if string can be parsed as a signed integer with no extra characters
+ * @return false if parsing fails or leaves unconsumed characters
+ *
+ * Uses std::istringstream with noskipws to reject leading whitespace.
+ */
 bool checkIfInt(const std::string& s) {
   /// return s.find_first_not_of("-0123456789") == std::string::npos;
   std::istringstream iss(s);
@@ -88,6 +139,15 @@ bool checkIfInt(const std::string& s) {
   return iss.eof() && !iss.fail();
 }
 
+/**
+ * @brief Checks if a string represents a valid floating-point number
+ *
+ * @param s String to validate
+ * @return true if string can be parsed as a double with no extra characters
+ * @return false if parsing fails or leaves unconsumed characters
+ *
+ * Uses std::istringstream with noskipws to reject leading whitespace.
+ */
 bool checkIfFloat(const std::string& s) {
   std::istringstream iss(s);
   double d;
@@ -96,10 +156,24 @@ bool checkIfFloat(const std::string& s) {
   return iss.eof() && !iss.fail();
 }
 
+/**
+ * @brief Checks if a string represents a valid boolean value
+ *
+ * @param s String to validate
+ * @return true if string is "0", "1", "true", or "false" (case-sensitive)
+ * @return false otherwise
+ */
 bool checkIfBool(const std::string& s) {
   return s == "0" || s == "1" || s == "true" || s == "false";
 }
 
+/**
+ * @brief Converts a string to a boolean value
+ *
+ * @param s String to convert (should be validated with checkIfBool first)
+ * @return true if string is "true" or "1"
+ * @return false if string is "false" or "0", or any other value
+ */
 bool getBoolVal(const std::string& s) {
   if (s == "true" || s == "1")
     return true;
@@ -109,10 +183,26 @@ bool getBoolVal(const std::string& s) {
     return false;
 }
 
+/**
+ * @brief Parses and applies a single parameter name-value pair
+ *
+ * @param name Parameter name (case-insensitive, converted to lowercase)
+ * @param val Parameter value as string (validated and converted to appropriate type)
+ *
+ * This method:
+ * 1. Converts parameter name to lowercase for case-insensitive matching
+ * 2. Validates the value type (uint, float, bool) and range
+ * 3. Updates the corresponding member in privParams if validation passes
+ * 4. Prints error message for invalid parameters
+ *
+ * @note When adding a new parameter, add its parsing logic here (step 3)
+ * @note Each parameter has specific validation rules (range checks, type checks)
+ */
 void ParamManager::ingestParameter(std::string name, std::string val) {
   std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
   /// std::cout << name << " " << val << '\n' << std::endl;
 
+  // Pre-validate and convert value to all possible types
   bool isUint = checkIfUint(val);
   unsigned uVal = isUint ? (unsigned)std::stol(val.c_str()) : 0;
   bool isFloat = checkIfFloat(val);
@@ -120,6 +210,7 @@ void ParamManager::ingestParameter(std::string name, std::string val) {
   bool isBool = checkIfBool(val);
   bool bVal = getBoolVal(val);
 
+  // Use do-while(0) pattern to allow early break on successful match
   do {
     if (name == "sizex" && isUint && uVal >= 2 && uVal <= (uint16_t)-1) {
       privParams.gridSize_X = uVal;
@@ -253,22 +344,41 @@ void ParamManager::ingestParameter(std::string name, std::string val) {
   } while (0);
 }
 
+/**
+ * @brief Loads and applies parameters from the registered config file
+ *
+ * @param generationNumber Current generation number (for generation-specific parameters)
+ *
+ * This method:
+ * 1. Opens the config file (registered via registerConfigFile())
+ * 2. Parses each line, ignoring comments (#) and blank lines
+ * 3. Supports generation-specific parameters using @N syntax (e.g., "population@100 = 5000")
+ * 4. Calls ingestParameter() for each valid parameter line
+ * 5. Updates parameterChangeGenerationNumber when a parameter becomes active
+ *
+ * @note Config file format: "parameterName = value  # optional comment"
+ * @note Generation-specific format: "parameterName@generationNum = value"
+ * @note Parameters with @N syntax only apply when generationNumber >= N
+ * @note std::ifstream is RAII - automatically closes when out of scope
+ */
 void ParamManager::updateFromConfigFile(unsigned generationNumber) {
   /// std::ifstream is RAII, i.e. no need to call close
   std::ifstream cFile(configFilename.c_str());
   if (cFile.is_open()) {
     std::string line;
     while (getline(cFile, line)) {
+      // Remove all whitespace for easier parsing
       line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
       if (line[0] == '#' || line.empty()) {
-        continue;
+        continue;  // Skip comment lines and blank lines
       }
       auto delimiterPos = line.find("=");
       auto name = line.substr(0, delimiterPos);
 
-      /// Process the generation specifier if present:
+      /// Process the generation specifier if present (e.g., "population@100")
       auto generationDelimiterPos = name.find("@");
       if (generationDelimiterPos < name.size()) {
+        // Found generation-specific parameter (e.g., "population@100")
         auto generationSpecifier = name.substr(generationDelimiterPos + 1);
         bool isUint = checkIfUint(generationSpecifier);
         if (!isUint) {
@@ -282,14 +392,15 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber) {
           /// Parameter value became active at exactly this generation number
           privParams.parameterChangeGenerationNumber = generationNumber;
         }
+        // Remove the @N suffix to get the base parameter name
         name = name.substr(0, generationDelimiterPos);
       }
 
       std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
       auto value0 = line.substr(delimiterPos + 1);
       auto delimiterComment = value0.find("#");
-      auto value = value0.substr(0, delimiterComment);
-      auto rawValue = value;
+      auto value = value0.substr(0, delimiterComment);  // Strip inline comments
+      auto rawValue = value;                            // Preserve raw value (currently unused)
       value.erase(std::remove_if(value.begin(), value.end(), isspace), value.end());
       /// std::cout << name << " " << value << '\n' << std::endl;
       ingestParameter(name, value);
@@ -299,8 +410,18 @@ void ParamManager::updateFromConfigFile(unsigned generationNumber) {
   }
 }
 
-/// Check parameter ranges, reasonableness, coherency, whatever. This is
-/// typically called only once after the parameters are first read.
+/**
+ * @brief Validates parameter values for consistency and reasonableness
+ *
+ * Performs cross-parameter validation checks that cannot be done in
+ * ingestParameter() (which validates individual parameters in isolation).
+ *
+ * Currently checks:
+ * - Warns if deterministic=true but numThreads != 1 (threading breaks determinism)
+ *
+ * @note This is typically called once after initial parameter loading
+ * @note Add new validation rules here for parameters that depend on each other
+ */
 void ParamManager::checkParameters() {
   if (privParams.deterministic && privParams.numThreads != 1) {
     std::cerr << "Warning: When deterministic is true, you probably want to set numThreads = 1." << std::endl;

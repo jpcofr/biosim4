@@ -1,4 +1,16 @@
-/// survival-criteria.cpp
+/**
+ * @file survival-criteria.cpp
+ * @brief Implements survival challenge evaluation logic for evolutionary selection.
+ *
+ * This file contains the logic for determining which individuals survive each generation
+ * based on various challenge types. Each challenge defines different spatial, social, or
+ * behavioral criteria that individuals must meet to become parents of the next generation.
+ *
+ * Challenges range from simple location-based tests (e.g., reach a corner) to complex
+ * behavioral requirements (e.g., maintain specific neighbor counts, visit locations in
+ * sequence). The scoring system allows both binary pass/fail and weighted selection based
+ * on performance quality.
+ */
 
 #include "simulator.h"
 
@@ -7,15 +19,42 @@
 
 namespace BioSim {
 
-/// Returns true and a score 0.0..1.0 if passed, false if failed
+/**
+ * @brief Evaluates whether an individual passed the survival criterion for the given challenge.
+ *
+ * This function implements the core selection mechanism for evolutionary fitness. Each challenge
+ * type defines different survival criteria that individuals must meet at the end of a generation
+ * to become parents. The function returns both a pass/fail boolean and a fitness score that can
+ * be used for weighted parent selection.
+ *
+ * @param indiv The individual to evaluate (must contain location, alive status, and challenge bits)
+ * @param challenge The challenge type ID (see challenge constants in simulator.h)
+ *
+ * @return A pair containing:
+ *         - bool: true if the individual passed the challenge, false otherwise
+ *         - float: fitness score in range [0.0, 1.0] where higher values indicate better performance.
+ *                  For binary challenges, score is 1.0 (pass) or 0.0 (fail).
+ *                  For weighted challenges, score reflects quality of achievement (e.g., distance to target).
+ *
+ * @note Dead individuals (indiv.alive == false) automatically fail all challenges with score 0.0
+ * @note Some challenges (e.g., CHALLENGE_RADIOACTIVE_WALLS, CHALLENGE_TOUCH_ANY_WALL) involve
+ *       partial evaluation in endOfSimStep() that sets flags in indiv.challengeBits
+ */
 std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned challenge) {
   if (!indiv.alive) {
     return {false, 0.0};
   }
 
   switch (challenge) {
-    /// Survivors are those inside the circular area defined by
-    /// safeCenter and radius
+    /**
+     * @brief CHALLENGE_CIRCLE - Survive by being inside a circular safe zone.
+     *
+     * Survivors must be located within a circular area in the lower-left quadrant
+     * of the arena. Score is weighted by distance from center (closer = higher score).
+     *
+     * Safe zone: Center at (gridSize_X/4, gridSize_Y/4), radius = gridSize_X/4
+     * Scoring: Linear interpolation from 1.0 at center to 0.0 at radius edge
+     */
     case CHALLENGE_CIRCLE: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 4.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 4.0)};
@@ -27,25 +66,50 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
                                 : std::pair<bool, float>{false, 0.0};
     }
 
-    /// Survivors are all those on the right side of the arena
+    /**
+     * @brief CHALLENGE_RIGHT_HALF - Survive by being on the right side of the arena.
+     *
+     * Binary challenge: All individuals on the right half (x > gridSize_X/2) survive.
+     * Scoring: 1.0 (pass) or 0.0 (fail), no gradient
+     */
     case CHALLENGE_RIGHT_HALF:
       return indiv.loc.x > parameterMngrSingleton.gridSize_X / 2 ? std::pair<bool, float>{true, 1.0}
                                                                  : std::pair<bool, float>{false, 0.0};
 
-    /// Survivors are all those on the right quarter of the arena
+    /**
+     * @brief CHALLENGE_RIGHT_QUARTER - Survive by being on the rightmost quarter of the arena.
+     *
+     * Binary challenge: Individuals must be in the rightmost 25% of the arena
+     * (x > gridSize_X/2 + gridSize_X/4, i.e., x > 3*gridSize_X/4).
+     * Scoring: 1.0 (pass) or 0.0 (fail)
+     */
     case CHALLENGE_RIGHT_QUARTER:
       return indiv.loc.x > parameterMngrSingleton.gridSize_X / 2 + parameterMngrSingleton.gridSize_X / 4
                  ? std::pair<bool, float>{true, 1.0}
                  : std::pair<bool, float>{false, 0.0};
 
-    /// Survivors are all those on the left eighth of the arena
+    /**
+     * @brief CHALLENGE_LEFT_EIGHTH - Survive by being on the leftmost eighth of the arena.
+     *
+     * Binary challenge: Individuals must be in the leftmost 12.5% of the arena (x < gridSize_X/8).
+     * Scoring: 1.0 (pass) or 0.0 (fail)
+     */
     case CHALLENGE_LEFT_EIGHTH:
       return indiv.loc.x < parameterMngrSingleton.gridSize_X / 8 ? std::pair<bool, float>{true, 1.0}
                                                                  : std::pair<bool, float>{false, 0.0};
 
-    /// Survivors are those not touching the border and with exactly the number
-    /// of neighbors defined by neighbors and radius, where neighbors includes
-    /// self
+    /**
+     * @brief CHALLENGE_STRING - Survive by forming a "string" pattern with neighbors.
+     *
+     * Complex social challenge requiring individuals to:
+     * 1. Not touch arena borders
+     * 2. Have between minNeighbors and maxNeighbors (inclusive) within radius 1.5
+     *
+     * Current parameters: minNeighbors=22, maxNeighbors=2 (NOTE: inverted, likely bug)
+     * This creates extremely restrictive conditions favoring isolated pairs.
+     *
+     * Scoring: 1.0 (pass) or 0.0 (fail)
+     */
     case CHALLENGE_STRING: {
       unsigned minNeighbors = 22;
       unsigned maxNeighbors = 2;
@@ -69,8 +133,15 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    /// Survivors are those within the specified radius of the center. The score
-    /// is linearly weighted by distance from the center.
+    /**
+     * @brief CHALLENGE_CENTER_WEIGHTED - Survive by being near the arena center (weighted scoring).
+     *
+     * Individuals within a circular zone centered in the arena survive. Score is linearly
+     * weighted by distance from center (closer = higher score).
+     *
+     * Safe zone: Center at (gridSize_X/2, gridSize_Y/2), radius = gridSize_X/3
+     * Scoring: Linear gradient from 1.0 at center to 0.0 at radius edge
+     */
     case CHALLENGE_CENTER_WEIGHTED: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 2.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 2.0)};
@@ -82,7 +153,14 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
                                 : std::pair<bool, float>{false, 0.0};
     }
 
-    /// Survivors are those within the specified radius of the center
+    /**
+     * @brief CHALLENGE_CENTER_UNWEIGHTED - Survive by being near the arena center (binary scoring).
+     *
+     * Same spatial requirement as CENTER_WEIGHTED but with binary scoring.
+     *
+     * Safe zone: Center at (gridSize_X/2, gridSize_Y/2), radius = gridSize_X/3
+     * Scoring: 1.0 (inside) or 0.0 (outside), no distance gradient
+     */
     case CHALLENGE_CENTER_UNWEIGHTED: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 2.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 2.0)};
@@ -93,9 +171,20 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return distance <= radius ? std::pair<bool, float>{true, 1.0} : std::pair<bool, float>{false, 0.0};
     }
 
-    /// Survivors are those within the specified outer radius of the center and
-    /// with the specified number of neighbors in the specified inner radius. The
-    /// score is not weighted by distance from the center.
+    /**
+     * @brief CHALLENGE_CENTER_SPARSE - Survive by being near center with specific neighbor density.
+     *
+     * Complex spatial + social challenge combining:
+     * 1. Location: Must be within outerRadius of arena center
+     * 2. Social: Must have between minNeighbors and maxNeighbors (inclusive) within innerRadius
+     *
+     * Parameters:
+     * - outerRadius = gridSize_X/4 (defines eligible zone)
+     * - innerRadius = 1.5 (neighbor counting radius)
+     * - minNeighbors = 5, maxNeighbors = 8 (includes self in count)
+     *
+     * Scoring: 1.0 (pass both criteria) or 0.0 (fail either)
+     */
     case CHALLENGE_CENTER_SPARSE: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 2.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 2.0)};
@@ -121,8 +210,16 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return {false, 0.0};
     }
 
-    /// Survivors are those within the specified radius of any corner.
-    /// Assumes square arena.
+    /**
+     * @brief CHALLENGE_CORNER - Survive by being near any corner (binary scoring).
+     *
+     * Individuals must be within a specified radius of any of the four arena corners.
+     * Requires square arena (gridSize_X == gridSize_Y).
+     *
+     * Parameters: radius = gridSize_X/8
+     * Corners tested: (0,0), (0,gridSize_Y-1), (gridSize_X-1,0), (gridSize_X-1,gridSize_Y-1)
+     * Scoring: 1.0 (near any corner) or 0.0 (too far from all corners)
+     */
     case CHALLENGE_CORNER: {
       assert(parameterMngrSingleton.gridSize_X == parameterMngrSingleton.gridSize_Y);
       float radius = parameterMngrSingleton.gridSize_X / 8.0;
@@ -147,8 +244,15 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return {false, 0.0};
     }
 
-    /// Survivors are those within the specified radius of any corner. The score
-    /// is linearly weighted by distance from the corner point.
+    /**
+     * @brief CHALLENGE_CORNER_WEIGHTED - Survive by being near any corner (weighted scoring).
+     *
+     * Same corner-seeking behavior as CHALLENGE_CORNER but with distance-weighted scoring.
+     * Requires square arena (gridSize_X == gridSize_Y).
+     *
+     * Parameters: radius = gridSize_X/4 (larger than unweighted version)
+     * Scoring: Linear gradient from 1.0 at corner to 0.0 at radius edge, evaluated for nearest corner
+     */
     case CHALLENGE_CORNER_WEIGHTED: {
       assert(parameterMngrSingleton.gridSize_X == parameterMngrSingleton.gridSize_Y);
       float radius = parameterMngrSingleton.gridSize_X / 4.0;
@@ -173,13 +277,27 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return {false, 0.0};
     }
 
-    /// This challenge is handled in endOfSimStep(), where individuals may die
-    /// at the end of any sim step. There is nothing else to do here at the
-    /// end of a generation. All remaining alive become parents.
+    /**
+     * @brief CHALLENGE_RADIOACTIVE_WALLS - Survival handled during simulation steps.
+     *
+     * This challenge is primarily evaluated in endOfSimStep(), where individuals
+     * may die when touching walls during any simulation step (not just at generation end).
+     * All individuals that survive to generation end become parents.
+     *
+     * Scoring: 1.0 (survived to generation end) or 0.0 (died during generation)
+     * @note The actual death logic is in endOfSimStep(), not here
+     */
     case CHALLENGE_RADIOACTIVE_WALLS:
       return {true, 1.0};
 
-    /// Survivors are those touching any wall at the end of the generation
+    /**
+     * @brief CHALLENGE_AGAINST_ANY_WALL - Survive by touching any wall at generation end.
+     *
+     * Binary challenge: Individuals must be at an arena edge when generation ends.
+     * Edge detection: x=0, x=gridSize_X-1, y=0, or y=gridSize_Y-1
+     *
+     * Scoring: 1.0 (on edge) or 0.0 (interior location)
+     */
     case CHALLENGE_AGAINST_ANY_WALL: {
       bool onEdge = indiv.loc.x == 0 || indiv.loc.x == parameterMngrSingleton.gridSize_X - 1 || indiv.loc.y == 0 ||
                     indiv.loc.y == parameterMngrSingleton.gridSize_Y - 1;
@@ -191,11 +309,16 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    /// This challenge is partially handled in endOfSimStep(), where individuals
-    /// that are touching a wall are flagged in their Indiv record. They are
-    /// allowed to continue living. Here at the end of the generation, any that
-    /// never touch a wall will die. All that touched a wall at any time during
-    /// their life will become parents.
+    /**
+     * @brief CHALLENGE_TOUCH_ANY_WALL - Survive by touching any wall at least once during life.
+     *
+     * Temporal challenge: Individuals must touch a wall at ANY point during the generation,
+     * not necessarily at the end. Wall contact is tracked in endOfSimStep() by setting
+     * flags in indiv.challengeBits.
+     *
+     * Scoring: 1.0 (touched wall at any time) or 0.0 (never touched wall)
+     * @note Requires coordination with endOfSimStep() for flag tracking
+     */
     case CHALLENGE_TOUCH_ANY_WALL:
       if (indiv.challengeBits != 0) {
         return {true, 1.0};
@@ -203,8 +326,16 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
         return {false, 0.0};
       }
 
-    /// Everybody survives and are candidate parents, but scored by how far
-    /// they migrated from their birth location.
+    /**
+     * @brief CHALLENGE_MIGRATE_DISTANCE - All survive, scored by migration distance.
+     *
+     * Non-lethal challenge: All individuals survive regardless of performance.
+     * Score is based on distance traveled from birth location to final location,
+     * normalized by arena dimensions.
+     *
+     * Scoring: distance / max(gridSize_X, gridSize_Y), range [0.0, ~1.41] for diagonal travel
+     * @note Higher scores favor individuals that migrated farther from birthplace
+     */
     case CHALLENGE_MIGRATE_DISTANCE: {
       /// unsigned requiredDistance = p.sizeX / 2.0;
       float distance = (indiv.loc - indiv.birthLoc).length();
@@ -212,15 +343,31 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       return {true, distance};
     }
 
-    /// Survivors are all those on the left or right eighths of the arena
+    /**
+     * @brief CHALLENGE_EAST_WEST_EIGHTHS - Survive by being on far left or far right.
+     *
+     * Binary challenge: Individuals must be in either:
+     * - Leftmost eighth (x < gridSize_X/8), OR
+     * - Rightmost eighth (x >= gridSize_X - gridSize_X/8)
+     *
+     * Scoring: 1.0 (in either edge zone) or 0.0 (in middle 75% of arena)
+     */
     case CHALLENGE_EAST_WEST_EIGHTHS:
       return indiv.loc.x < parameterMngrSingleton.gridSize_X / 8 ||
                      indiv.loc.x >= (parameterMngrSingleton.gridSize_X - parameterMngrSingleton.gridSize_X / 8)
                  ? std::pair<bool, float>{true, 1.0}
                  : std::pair<bool, float>{false, 0.0};
 
-    /// Survivors are those within radius of any barrier center. Weighted by
-    /// distance.
+    /**
+     * @brief CHALLENGE_NEAR_BARRIER - Survive by being near any barrier (weighted scoring).
+     *
+     * Individuals must be within radius of any barrier center in the arena.
+     * Score is inversely weighted by distance to nearest barrier (closer = higher score).
+     *
+     * Parameters: radius = gridSize_X/2 (current setting, alternatives commented in code)
+     * Scoring: 1.0 - (distance/radius) for nearest barrier within radius, 0.0 if too far
+     * @note Requires barriers to be placed in arena (see createBarrier.cpp)
+     */
     case CHALLENGE_NEAR_BARRIER: {
       float radius;
       /// radius = 20.0;
@@ -242,8 +389,18 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    /// Survivors are those not touching a border and with exactly one neighbor
-    /// which has no other neighbor
+    /**
+     * @brief CHALLENGE_PAIRS - Survive by forming an isolated pair with exactly one neighbor.
+     *
+     * Complex social challenge requiring:
+     * 1. Individual must not touch arena border
+     * 2. Individual must have exactly ONE neighbor (3x3 neighborhood, excluding self)
+     * 3. That neighbor must have NO other neighbors (only the pair member)
+     *
+     * This creates isolated pairs in the arena with no other individuals nearby.
+     *
+     * Scoring: 1.0 (valid pair) or 0.0 (wrong neighbor count or neighbor has other neighbors)
+     */
     case CHALLENGE_PAIRS: {
       bool onEdge = indiv.loc.x == 0 || indiv.loc.x == parameterMngrSingleton.gridSize_X - 1 || indiv.loc.y == 0 ||
                     indiv.loc.y == parameterMngrSingleton.gridSize_Y - 1;
@@ -280,9 +437,18 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    /// Survivors are those that contacted one or more specified locations in a
-    /// sequence, ranked by the number of locations contacted. There will be a
-    /// bit set in their challengeBits member for each location contacted.
+    /**
+     * @brief CHALLENGE_LOCATION_SEQUENCE - Survive by visiting target locations in sequence.
+     *
+     * Temporal challenge: Individuals must contact specified locations during the generation.
+     * Each location contacted sets a bit in indiv.challengeBits (tracked in endOfSimStep()).
+     * Score reflects the number of locations successfully contacted.
+     *
+     * Scoring: (number of bits set) / (maximum possible bits), range [0.0, 1.0]
+     *          Higher scores = more locations visited in sequence
+     * @note Requires coordination with endOfSimStep() for bit flag tracking
+     * @note Passes if at least one location was contacted (count > 0)
+     */
     case CHALLENGE_LOCATION_SEQUENCE: {
       unsigned count = 0;
       unsigned bits = indiv.challengeBits;
@@ -300,7 +466,17 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     } break;
 
-    /// Survivors are all those within the specified radius of the NE corner
+    /**
+     * @brief CHALLENGE_ALTRUISM_SACRIFICE - Survive by gathering in NE quadrant (weighted).
+     *
+     * Individuals must be within a circular zone in the northeast quadrant.
+     * Score is weighted by distance from center (closer = higher score).
+     * Name suggests altruism mechanics but current implementation is pure location-based.
+     *
+     * Safe zone: Center at (3*gridSize_X/4, 3*gridSize_Y/4), radius = gridSize_X/4
+     * In 128x128 arena: holds ~804 agents with current radius
+     * Scoring: Linear gradient from 1.0 at center to 0.0 at radius edge
+     */
     case CHALLENGE_ALTRUISM_SACRIFICE: {
       /// float radius = p.sizeX / 3.0; // in 128^2 world, holds 1429 agents
       float radius = parameterMngrSingleton.gridSize_X / 4.0;  ///< in 128^2 world, holds 804 agents
@@ -317,8 +493,17 @@ std::pair<bool, float> passedSurvivalCriterion(const Individual& indiv, unsigned
       }
     }
 
-    /// Survivors are those inside the circular area defined by
-    /// safeCenter and radius
+    /**
+     * @brief CHALLENGE_ALTRUISM - Survive by gathering in SW quadrant (weighted).
+     *
+     * Individuals must be within a circular zone in the southwest quadrant.
+     * Score is weighted by distance from center (closer = higher score).
+     * Name suggests altruism mechanics but current implementation is pure location-based.
+     *
+     * Safe zone: Center at (gridSize_X/4, gridSize_Y/4), radius = gridSize_X/4
+     * In 128x128 arena: holds ~3216 agents (larger capacity than ALTRUISM_SACRIFICE)
+     * Scoring: Linear gradient from 1.0 at center to 0.0 at radius edge
+     */
     case CHALLENGE_ALTRUISM: {
       Coordinate safeCenter{(int16_t)(parameterMngrSingleton.gridSize_X / 4.0),
                             (int16_t)(parameterMngrSingleton.gridSize_Y / 4.0)};

@@ -1,14 +1,31 @@
-/// random.cpp
-
-/// This file provides a random number generator (RNG) for the main thread
-/// and child threads. The global-scoped RNG instance named randomUint is
-/// declared "threadprivate" for OpenMP, meaning that each thread will
-/// instantiate its own private instance. A side effect is that the object cannot
-/// have a non-trivial ctor, so it has an initialize() member function that must
-/// be called to seed the RNG instance, typically in simulator() in simulator.cpp
-/// after the config parameters have been read. The config/biosim4.ini parameters named
-/// "deterministic" and "RNGSeed" determine whether to initialize the RNG with
-/// a user-defined deterministic seed or with a random seed.
+/**
+ * @file random.cpp
+ * @brief Implementation of fast pseudo-random number generation for simulation
+ *
+ * This file implements thread-safe random number generation using two algorithms:
+ * - **Marsaglia KISS** (Keep It Simple Stupid) algorithm
+ * - **Jenkins** small fast algorithm
+ *
+ * ## Thread Safety
+ * The global `randomUint` instance is declared `threadprivate` for OpenMP,
+ * meaning each thread instantiates its own private copy. This eliminates
+ * lock contention but prevents trivial constructors.
+ *
+ * ## Initialization Requirements
+ * Because of the threadprivate constraint, the RNG uses an explicit
+ * `initialize()` method rather than a constructor. This must be called:
+ * - After reading config parameters (in `simulator()`)
+ * - Before any random number generation
+ * - Once per thread
+ *
+ * ## Configuration
+ * Controlled by `config/biosim4.ini` parameters:
+ * - `deterministic`: If true, use `RNGSeed` for reproducible sequences
+ * - `RNGSeed`: Seed value when deterministic mode is enabled
+ *
+ * @see RandomUintGenerator
+ * @see simulator.cpp
+ */
 
 #include "omp.h"
 #include "simulator.h"
@@ -21,18 +38,38 @@
 
 namespace BioSim {
 
-/// If parameter p.deterministic is true, we'll initialize the RNG with
-/// the seed specified in parameter p.RNGSeed, otherwise we'll initialize
-/// the RNG with a random seed. This initializes both the Marsaglia and
-/// the Jenkins algorithms. The member function operator() determines
-/// which algorithm is actually used.
+/**
+ * @brief Initialize the random number generator with appropriate seeds
+ *
+ * Seeds both the Marsaglia and Jenkins algorithm state variables. The seeding
+ * strategy depends on the `deterministic` configuration parameter:
+ *
+ * ## Deterministic Mode (deterministic=true)
+ * - Uses `RNGSeed` parameter as base seed
+ * - Each thread gets a unique but reproducible seed: `RNGSeed + thread_num`
+ * - Guarantees identical sequences across runs with same seed
+ * - All state variables forced to non-zero (required by algorithms)
+ *
+ * ## Non-Deterministic Mode (deterministic=false)
+ * - Uses `std::mt19937` seeded with `time(0) + thread_num`
+ * - Each thread gets unique, non-reproducible sequences
+ * - Ensures all state variables are non-zero via rejection sampling
+ *
+ * @note Must be called after config parameters are loaded and before any
+ *       calls to operator(). Typically invoked in `simulator()`.
+ * @note Thread-safe: each thread initializes its own threadprivate instance
+ *
+ * @warning Marsaglia and Jenkins algorithms fail if any state is zero,
+ *          so zero values are explicitly avoided during initialization
+ *
+ * @see parameterMngrSingleton
+ */
 void RandomUintGenerator::initialize() {
   if (parameterMngrSingleton.deterministic) {
-    /// Initialize Marsaglia. Overflow wrap-around is ok. We just want
-    /// the four parameters to be unrelated. In the extremely unlikely
-    /// event that a coefficient is zero, we'll force it to an arbitrary
-    /// non-zero value. Each thread uses a different seed, yet
-    /// deterministic per-thread.
+    // Initialize Marsaglia KISS algorithm state
+    // Overflow wrap-around is acceptable - we just need unrelated values
+    // Each thread uses a different but deterministic seed
+    // Zero values are forced to arbitrary non-zero (required by algorithm)
     rngx = parameterMngrSingleton.RNGSeed + 123456789 + omp_get_thread_num();
     rngy = parameterMngrSingleton.RNGSeed + 362436000 + omp_get_thread_num();
     rngz = parameterMngrSingleton.RNGSeed + 521288629 + omp_get_thread_num();
@@ -42,24 +79,22 @@ void RandomUintGenerator::initialize() {
     rngz = rngz != 0 ? rngz : 123456789;
     rngc = rngc != 0 ? rngc : 123456789;
 
-    /// Initialize Jenkins determinstically per-thread:
+    // Initialize Jenkins algorithm state deterministically per-thread
     a = 0xf1ea5eed;
     b = c = d = parameterMngrSingleton.RNGSeed + omp_get_thread_num();
     if (b == 0) {
       b = c = d + 123456789;
     }
   } else {
-    /// Non-deterministic initialization.
-    /// First we will get a random number from the built-in mt19937
-    /// (Mersenne twister) generator and use that to derive the
-    /// starting coefficients for the Marsaglia and Jenkins RNGs.
-    /// We'll seed mt19937 with time(), but that has a coarse
-    /// resolution and multiple threads might be initializing their
-    /// instances at nearly the same time, so we'll add the thread
-    /// number to uniquely seed mt19937 per-thread.
+    // Non-deterministic initialization using mt19937 (Mersenne Twister)
+    // Strategy:
+    // 1. Seed mt19937 with time(0) + thread_num for per-thread uniqueness
+    //    (time() alone has coarse resolution - threads might init simultaneously)
+    // 2. Use mt19937 to generate starting coefficients for Marsaglia and Jenkins
+    // 3. Reject any zero values via do-while loops
     std::mt19937 generator(time(0) + omp_get_thread_num());
 
-    /// Initialize Marsaglia, but don't let any of the values be zero:
+    // Initialize Marsaglia state, rejecting zero values
     do {
       rngx = generator();
     } while (rngx == 0);
@@ -73,7 +108,7 @@ void RandomUintGenerator::initialize() {
       rngc = generator();
     } while (rngc == 0);
 
-    /// Initialize Jenkins, but don't let any of the values be zero:
+    // Initialize Jenkins state, rejecting zero values
     a = 0xf1ea5eed;
     do {
       b = c = d = generator();
@@ -81,26 +116,43 @@ void RandomUintGenerator::initialize() {
   }
 }
 
-/// This returns a random 32-bit integer. Neither the Marsaglia nor the Jenkins
-/// algorithms are of cryptographic quality, but we don't need that. We just need
-/// randomness of shotgun quality. The Jenkins algorithm is the fastest.
-/// The Marsaglia algorithm is from
-/// http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf where it is
-/// attributed to G. Marsaglia.
-///
+/**
+ * @brief Generate a random 32-bit unsigned integer
+ *
+ * Returns uniformly distributed random values across the full uint32 range.
+ * Currently uses the Jenkins algorithm (controlled by `if (false)` branch).
+ *
+ * ## Algorithm Selection
+ * - **Jenkins**: Fast, good statistical properties (currently active)
+ * - **Marsaglia KISS**: Alternative with similar quality (disabled)
+ *
+ * ## Performance vs Quality Trade-off
+ * Neither algorithm is cryptographically secure, but that's intentional:
+ * - Speed is critical (called in deeply nested loops)
+ * - "Shotgun quality" randomness is sufficient for simulation
+ * - Jenkins is empirically the fastest
+ *
+ * @return Random 32-bit unsigned integer in range [0, UINT32_MAX]
+ *
+ * @note The Marsaglia implementation is from:
+ *       http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
+ *       (attributed to G. Marsaglia)
+ *
+ * @see operator()(unsigned, unsigned) for bounded random values
+ */
 uint32_t RandomUintGenerator::operator()() {
   if (false) {
-    /// Marsaglia algorithm
+    // Marsaglia KISS algorithm (currently disabled in favor of Jenkins)
     uint64_t t, a = 698769069ULL;
     rngx = 69069 * rngx + 12345;
     rngy ^= (rngy << 13);
     rngy ^= (rngy >> 17);
-    rngy ^= (rngy << 5); /**< y must never be set to zero! */
+    rngy ^= (rngy << 5);  // CRITICAL: y must never be set to zero!
     t = a * rngz + rngc;
-    rngc = (t >> 32); /**< Also avoid setting z=c=0! */
+    rngc = (t >> 32);  // CRITICAL: Also avoid setting z=c=0!
     return rngx + rngy + (rngz = t);
   } else {
-/// Jenkins algorithm
+    // Jenkins small fast algorithm (currently active)
 #define rot32(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
     uint32_t e = a - rot32(b, 27);
     a = b ^ rot32(c, 17);
@@ -111,21 +163,62 @@ uint32_t RandomUintGenerator::operator()() {
   }
 }
 
-/// Returns an unsigned integer between min and max, inclusive.
-/// Sure, there's a bias when using modulus operator where (max - min) is not
-/// a power of two, but we don't care if we generate one value a little more
-/// often than another. Our randomness does not have to be high quality.
-/// We do care about speed, because this will get called inside deeply nested
-/// inner loops. Alternatively, we could create a standard C++ "distribution"
-/// object here, but we would first need to investigate its overhead.
-///
+/**
+ * @brief Generate a random unsigned integer within a specified range
+ *
+ * Returns uniformly distributed random values in the closed interval [min, max].
+ *
+ * ## Implementation Note: Modulo Bias
+ * Uses the modulus operator for range mapping, which introduces slight bias
+ * when `(max - min + 1)` is not a power of two. This is **intentionally accepted**:
+ * - The bias is negligible for simulation purposes
+ * - Speed is critical (called in deeply nested loops)
+ * - Alternative approaches (std::uniform_int_distribution) have overhead
+ *
+ * ## Performance Priority
+ * This function prioritizes execution speed over perfect statistical uniformity.
+ * For simulation randomness, "good enough" is genuinely good enough.
+ *
+ * @param min Minimum value (inclusive)
+ * @param max Maximum value (inclusive)
+ * @return Random unsigned integer in range [min, max]
+ *
+ * @pre max >= min (enforced by assertion)
+ * @note Typical bias magnitude: ~(UINT32_MAX % range) / UINT32_MAX
+ *
+ * @see operator()() for unbounded random values
+ */
 unsigned RandomUintGenerator::operator()(unsigned min, unsigned max) {
   assert(max >= min);
   return ((*this)() % (max - min + 1)) + min;
 }
 
-/// This is the globally-accessible random number generator. Declaring
-/// it threadprivate causes each thread to instantiate a private instance.
+/**
+ * @var randomUint
+ * @brief Global thread-safe random number generator instance
+ *
+ * This is the primary RNG used throughout the simulation. The `threadprivate`
+ * pragma ensures each OpenMP thread maintains its own independent instance,
+ * eliminating lock contention while preserving deterministic behavior per thread.
+ *
+ * ## Thread Safety Model
+ * - Each thread has a private copy (no shared state)
+ * - No locks or atomic operations needed
+ * - Each thread's sequence is independent and reproducible (when deterministic)
+ *
+ * ## Usage Pattern
+ * ```cpp
+ * // In simulator.cpp after config load:
+ * randomUint.initialize();
+ *
+ * // Anywhere in the simulation:
+ * uint32_t val = randomUint();          // Full range
+ * unsigned bounded = randomUint(0, 99); // Range [0, 99]
+ * ```
+ *
+ * @note Must call `initialize()` before first use
+ * @see RandomUintGenerator::initialize()
+ */
 RandomUintGenerator randomUint;
 #pragma omp threadprivate(randomUint)
 

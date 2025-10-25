@@ -1,4 +1,30 @@
-/// genome.cpp
+/**
+ * @file genome.cpp
+ * @brief Genome creation, mutation, and neural network wiring implementation
+ *
+ * This file implements the genetic encoding system that translates genomes into
+ * functional neural networks. Key processes:
+ *
+ * ## Genome → Neural Network Pipeline
+ * 1. **Renumbering**: Map 16-bit genome neuron indices → 0..maxNumberNeurons-1
+ * 2. **Node Discovery**: Build list of all neurons referenced in connections
+ * 3. **Culling**: Remove neurons with no outputs (or only self-connections)
+ * 4. **Remapping**: Renumber remaining neurons sequentially from 0
+ * 5. **Wiring**: Create final connection list (neurons first, then actions)
+ *
+ * ## Genetic Operations
+ * - **Mutation**: Point mutations (bit flips), insertions, deletions
+ * - **Reproduction**: Sexual (two-parent crossover) or asexual (single parent)
+ * - **Selection**: Fitness-based or random parent selection
+ *
+ * ## Design Notes
+ * - Neurons are culled if they don't contribute to action outputs
+ * - Connection ordering optimizes feedForward execution (see feedForward.cpp)
+ * - Genome length can vary if configured (insertions/deletions enabled)
+ *
+ * @see createWiringFromGenome() for the main genome→neural net conversion
+ * @see generateChildGenome() for reproduction and mutation
+ */
 
 #include "random.h"
 #include "simulator.h"
@@ -12,32 +38,73 @@
 
 namespace BioSim {
 
-/// This structure is used while converting the connection list to a
-/// neural net. This helps us to find neurons that don't feed anything
-/// so that they can be removed along with all the connections that
-/// feed the useless neurons. We'll cull neurons with .numOutputs == 0
-/// or those that only feed themselves, i.e., .numSelfInputs == .numOutputs.
-/// Finally, we'll renumber the remaining neurons sequentially starting
-/// at zero using the .remappedNumber member.
+/**
+ * @struct Node
+ * @brief Temporary structure for neural network construction from genome
+ *
+ * Used during genome→neural net conversion to track neuron usage and connectivity.
+ * This helps identify and remove "useless" neurons (those with no outputs or only
+ * self-connections) before final wiring.
+ *
+ * ## Culling Criteria
+ * A neuron is removed if:
+ * - `numOutputs == 0` (feeds nothing)
+ * - `numOutputs == numSelfInputs` (only feeds itself)
+ *
+ * ## Renumbering Process
+ * 1. Original genome uses 16-bit neuron indices
+ * 2. First renumbering: modulo to 0..maxNumberNeurons-1
+ * 3. After culling: `remappedNumber` provides sequential 0-based indices
+ *
+ * @see makeNodeList() for initial node discovery
+ * @see cullUselessNeurons() for removal logic
+ */
 struct Node {
-  uint16_t remappedNumber;
-  uint16_t numOutputs;
-  uint16_t numSelfInputs;
-  uint16_t numInputsFromSensorsOrOtherNeurons;
+  uint16_t remappedNumber;                      ///< Final sequential neuron index (0-based)
+  uint16_t numOutputs;                          ///< Total outgoing connections from this neuron
+  uint16_t numSelfInputs;                       ///< Number of connections feeding back to self
+  uint16_t numInputsFromSensorsOrOtherNeurons;  ///< Incoming connections (non-self)
 };
 
-/// Two neuron renumberings occur: The original genome uses a uint16_t for
-/// neuron numbers. The first renumbering maps 16-bit unsigned neuron numbers
-/// to the range 0..p.maxNumberNeurons - 1. After culling useless neurons
-/// (see comments above), we'll renumber the remaining neurons sequentially
-/// starting at 0.
-typedef std::map<uint16_t, Node> NodeMap;  ///< key is neuron number 0..p.maxNumberNeurons - 1
+/**
+ * @typedef NodeMap
+ * @brief Map of neuron index to Node metadata during network construction
+ *
+ * Key: Neuron index in range 0..maxNumberNeurons-1 (after first renumbering)
+ * Value: Node struct tracking connectivity statistics
+ *
+ * Used during genome→neural net conversion to track which neurons are referenced
+ * and determine which can be culled.
+ */
+typedef std::map<uint16_t, Node> NodeMap;
 
+/**
+ * @typedef ConnectionList
+ * @brief Temporary list of Gene connections during network construction
+ *
+ * Mutable list used during wiring process. Connections may be removed during
+ * neuron culling, then final connections are copied to Individual::nnet.connections.
+ */
 typedef std::list<Gene> ConnectionList;
 
-/// Returns by value a single gene with random members.
-/// See genome.h for the width of the members.
-/// TODO don't assume the width of the members in gene.
+/**
+ * @brief Generates a random gene with randomized fields
+ *
+ * Creates a single Gene with all fields randomly initialized:
+ * - sourceType: SENSOR (1) or NEURON (0)
+ * - sourceNum: Random 15-bit unsigned value (0..0x7fff)
+ * - sinkType: ACTION (1) or NEURON (0)
+ * - sinkNum: Random 15-bit unsigned value (0..0x7fff)
+ * - weight: Random weight via Gene::makeRandomWeight()
+ *
+ * @note Neuron indices are 15-bit to avoid sign bit issues; remapped later
+ *       via modulo to actual neuron count
+ *
+ * @return Newly created random Gene
+ *
+ * @todo Remove hardcoded bit widths; use Gene member properties instead
+ * @see makeRandomGenome() for genome-level randomization
+ */
 Gene makeRandomGene() {
   Gene gene;
 
@@ -50,7 +117,20 @@ Gene makeRandomGene() {
   return gene;
 }
 
-/// Returns by value a single genome with random genes.
+/**
+ * @brief Generates a random genome with variable length
+ *
+ * Creates a genome containing random genes with length determined by config:
+ * - Length range: [genomeInitialLengthMin, genomeInitialLengthMax]
+ * - Each gene is randomly generated via makeRandomGene()
+ *
+ * Used during initial population spawning to create genetic diversity.
+ *
+ * @return Newly created random Genome (vector of Genes)
+ *
+ * @see makeRandomGene() for individual gene creation
+ * @see Params::genomeInitialLengthMin, Params::genomeInitialLengthMax
+ */
 Genome makeRandomGenome() {
   Genome genome;
 
@@ -63,11 +143,31 @@ Genome makeRandomGenome() {
   return genome;
 }
 
-/// Convert the indiv's genome to a renumbered connection list.
-/// This renumbers the neurons from their uint16_t values in the genome
-/// to the range 0..p.maxNumberNeurons - 1 by using a modulo operator.
-/// Sensors are renumbered 0..Sensor::NUM_SENSES - 1
-/// Actions are renumbered 0..Action::NUM_ACTIONS - 1
+/**
+ * @brief Converts genome to renumbered connection list (first remapping stage)
+ *
+ * Performs initial renumbering of all gene indices to valid ranges:
+ * - **Neurons**: 16-bit genome indices → 0..maxNumberNeurons-1 (via modulo)
+ * - **Sensors**: Remapped to 0..NUM_SENSES-1 (via modulo)
+ * - **Actions**: Remapped to 0..NUM_ACTIONS-1 (via modulo)
+ *
+ * This is the first of two renumbering stages. The second stage (sequential
+ * renumbering 0..N) occurs after culling useless neurons.
+ *
+ * ## Example
+ * ```
+ * Genome gene: sourceNum=50000, sinkNum=30000 (both NEURON type)
+ * If maxNumberNeurons=128:
+ *   → sourceNum = 50000 % 128 = 16
+ *   → sinkNum   = 30000 % 128 = 48
+ * ```
+ *
+ * @param[out] connectionList Output list populated with renumbered genes
+ * @param[in] genome Input genome to convert
+ *
+ * @note Clears connectionList before populating
+ * @see cullUselessNeurons() for second renumbering after culling
+ */
 void makeRenumberedConnectionList(ConnectionList& connectionList, const Genome& genome) {
   connectionList.clear();
   for (auto const& gene : genome) {
@@ -88,9 +188,28 @@ void makeRenumberedConnectionList(ConnectionList& connectionList, const Genome& 
   }
 }
 
-/// Scan the connections and make a list of all the neuron numbers
-/// mentioned in the connections. Also keep track of how many inputs and
-/// outputs each neuron has.
+/**
+ * @brief Builds node map from connection list with connectivity statistics
+ *
+ * Scans all connections to discover neurons and track their connectivity:
+ * - Creates Node entry for each neuron referenced as source or sink
+ * - Counts outputs (connections where neuron is source)
+ * - Counts self-inputs (connections where source == sink neuron)
+ * - Counts external inputs (connections from sensors or other neurons)
+ *
+ * ## Connectivity Tracking
+ * For each connection:
+ * - **Sink is NEURON**: Increment that neuron's input counters
+ * - **Source is NEURON**: Increment that neuron's output counter
+ * - **Self-connection**: Increment numSelfInputs specifically
+ *
+ * @param[out] nodeMap Output map populated with neuron indices and metadata
+ * @param[in] connectionList Input connections (already renumbered)
+ *
+ * @note Clears nodeMap before populating
+ * @note Only creates entries for neurons actually referenced in connections
+ * @see Node for structure of connectivity metadata
+ */
 void makeNodeList(NodeMap& nodeMap, const ConnectionList& connectionList) {
   nodeMap.clear();
 
@@ -131,8 +250,23 @@ void makeNodeList(NodeMap& nodeMap, const ConnectionList& connectionList) {
   }
 }
 
-/// During the culling process, we will remove any neuron that has no outputs,
-/// and all the connections that feed the useless neuron.
+/**
+ * @brief Removes all connections feeding a specific neuron
+ *
+ * Called during neuron culling to clean up connections to neurons being removed.
+ * For each removed connection:
+ * - If source is another neuron, decrement that neuron's output count
+ * - Remove connection from list
+ *
+ * This ensures connectivity statistics remain accurate as neurons are culled.
+ *
+ * @param[in,out] connections Connection list to modify
+ * @param[in,out] nodeMap Node map to update (output counts decremented)
+ * @param[in] neuronNumber Index of neuron whose input connections should be removed
+ *
+ * @note Uses erase-remove idiom for safe list modification during iteration
+ * @see cullUselessNeurons() for the calling context
+ */
 void removeConnectionsToNeuron(ConnectionList& connections, NodeMap& nodeMap, uint16_t neuronNumber) {
   for (auto itConn = connections.begin(); itConn != connections.end();) {
     if (itConn->sinkType == NEURON && itConn->sinkNum == neuronNumber) {
@@ -148,10 +282,35 @@ void removeConnectionsToNeuron(ConnectionList& connections, NodeMap& nodeMap, ui
   }
 }
 
-/// If a neuron has no outputs or only outputs that feed itself, then we
-/// remove it along with all connections that feed it. Reiterative, because
-/// after we remove a connection to a useless neuron, it may result in a
-/// different neuron having no outputs.
+/**
+ * @brief Iteratively removes neurons with no functional outputs
+ *
+ * Culls neurons that don't contribute to the network's action outputs:
+ * - **No outputs**: numOutputs == 0
+ * - **Only self-connections**: numOutputs == numSelfInputs
+ *
+ * ## Iterative Process
+ * The algorithm runs multiple passes because removing a neuron may cause
+ * cascading effects:
+ * 1. Find neuron with zero functional outputs
+ * 2. Remove all connections feeding that neuron (via removeConnectionsToNeuron)
+ * 3. Decrement output counts for source neurons of removed connections
+ * 4. Repeat until no more neurons can be culled
+ *
+ * ## Example Cascade
+ * ```
+ * Initial: A→B→C (B has 1 output to C)
+ * Step 1: C culled (no outputs) → connection B→C removed
+ * Step 2: B now has no outputs → B culled → connection A→B removed
+ * Result: Only A remains (if it has other outputs)
+ * ```
+ *
+ * @param[in,out] connections Connection list (connections to culled neurons removed)
+ * @param[in,out] nodeMap Node map (culled neurons removed)
+ *
+ * @note Critical for network efficiency; prevents wasted computation on useless neurons
+ * @see removeConnectionsToNeuron() for connection cleanup logic
+ */
 void cullUselessNeurons(ConnectionList& connections, NodeMap& nodeMap) {
   bool allDone = false;
   while (!allDone) {
@@ -172,17 +331,40 @@ void cullUselessNeurons(ConnectionList& connections, NodeMap& nodeMap) {
   }
 }
 
-/// This function is used when an agent is spawned. This function converts the
-/// agent's inherited genome into the agent's neural net brain. There is a close
-/// correspondence between the genome and the neural net, but a connection
-/// specified in the genome will not be represented in the neural net if the
-/// connection feeds a neuron that does not itself feed anything else.
-/// Neurons get renumbered in the process:
-/// 1. Create a set of referenced neuron numbers where each index is in the
-///    range 0..p.genomeMaxLength-1, keeping a count of outputs for each neuron.
-/// 2. Delete any referenced neuron index that has no outputs or only feeds
-/// itself.
-/// 3. Renumber the remaining neurons sequentially starting at 0.
+/**
+ * @brief Converts individual's genome into functional neural network wiring
+ *
+ * Main entry point for genome→neural net translation, called when agent spawns.
+ * Transforms genetic encoding into executable neural network structure optimized
+ * for feedforward execution.
+ *
+ * ## Pipeline Stages
+ * 1. **Renumbering**: Map genome indices to valid ranges (makeRenumberedConnectionList)
+ * 2. **Node Discovery**: Identify all neurons and track connectivity (makeNodeList)
+ * 3. **Culling**: Remove useless neurons iteratively (cullUselessNeurons)
+ * 4. **Remapping**: Assign sequential 0-based indices to surviving neurons
+ * 5. **Wiring**: Build final connection list with optimized ordering
+ * 6. **Neuron Creation**: Initialize neuron state array
+ *
+ * ## Connection Ordering Optimization
+ * Connections are ordered for efficient feedforward processing:
+ * - **Phase 1**: Sensor/Neuron → Neuron connections (internal processing)
+ * - **Phase 2**: Sensor/Neuron → Action connections (outputs)
+ *
+ * This allows feedForward() to process all internal neurons before actions.
+ *
+ * ## Neuron State
+ * Each surviving neuron is initialized with:
+ * - `output`: Set to initialNeuronOutput() value
+ * - `driven`: True if neuron receives external inputs (not just self-connections)
+ *
+ * @note Member function of Individual; modifies this->nnet
+ * @note Genome preserved unchanged; only nnet is built
+ *
+ * @see makeRenumberedConnectionList() for stage 1
+ * @see cullUselessNeurons() for stage 3
+ * @see feedForward() in feedForward.cpp for execution using this wiring
+ */
 void Individual::createWiringFromGenome() {
   NodeMap nodeMap;                ///< list of neurons and their number of inputs and outputs
   ConnectionList connectionList;  ///< synaptic connections
@@ -249,9 +431,33 @@ void Individual::createWiringFromGenome() {
   }
 }
 
-/// ---------------------------------------------------------------------------
+// =============================================================================
+// Genetic Mutation and Reproduction Functions
+// =============================================================================
 
-/// This applies a point mutation at a random bit in a genome.
+/**
+ * @brief Applies a single-bit mutation to a random gene in the genome
+ *
+ * Performs point mutation by flipping bits in gene fields. Two methods available:
+ *
+ * ## Method 0 (Disabled)
+ * Random byte-level bit flip in genome's raw memory representation
+ *
+ * ## Method 1 (Active)
+ * Structured field-level mutations with probabilities:
+ * - **20% chance**: Flip sourceType (SENSOR ↔ NEURON)
+ * - **20% chance**: Flip sinkType (ACTION ↔ NEURON)
+ * - **20% chance**: Flip random bit in sourceNum
+ * - **20% chance**: Flip random bit in sinkNum
+ * - **20% chance**: Flip random bit (1..15) in weight
+ *
+ * Method 1 preserves gene structure better than raw byte manipulation.
+ *
+ * @param[in,out] genome Genome to mutate (one gene modified)
+ *
+ * @note Weight bit flips exclude bit 0 to avoid tiny changes
+ * @see applyPointMutations() for multiple mutation applications
+ */
 void randomBitFlip(Genome& genome) {
   int method = 1;
 
@@ -279,10 +485,27 @@ void randomBitFlip(Genome& genome) {
   }
 }
 
-/// If the genome is longer than the prescribed length, and if it's longer
-/// than one gene, then we remove genes from the front or back. This is
-/// used only when the simulator is configured to allow genomes of
-/// unequal lengths during a simulation.
+/**
+ * @brief Trims genome to specified maximum length
+ *
+ * Removes genes from front or back (50% probability each) to achieve target
+ * length. Used during sexual reproduction to manage offspring genome size.
+ *
+ * ## Trimming Strategy
+ * - If genome.size() > length: Remove excess genes
+ * - 50% chance: Trim from front (erase beginning genes)
+ * - 50% chance: Trim from back (erase ending genes)
+ * - Minimum: Always preserve at least 1 gene
+ *
+ * Only active when simulator configured for variable genome lengths
+ * (Params::geneInsertionDeletionRate > 0).
+ *
+ * @param[in,out] genome Genome to trim
+ * @param[in] length Target maximum length
+ *
+ * @note Does nothing if genome.size() <= length or length == 0
+ * @see generateChildGenome() for usage during reproduction
+ */
 void cropLength(Genome& genome, unsigned length) {
   if (genome.size() > length && length > 0) {
     if (randomUint() / (float)RANDOM_UINT_MAX < 0.5) {
@@ -296,9 +519,32 @@ void cropLength(Genome& genome, unsigned length) {
   }
 }
 
-/// Inserts or removes a single gene from the genome. This is
-/// used only when the simulator is configured to allow genomes of
-/// unequal lengths during a simulation.
+/**
+ * @brief Randomly inserts or deletes a gene from the genome
+ *
+ * Applies insertion/deletion mutations with probability controlled by
+ * Params::geneInsertionDeletionRate. Deletion vs insertion ratio controlled
+ * by Params::deletionRatio.
+ *
+ * ## Mutation Types
+ * - **Deletion**: Remove random gene (if genome has >1 gene)
+ * - **Insertion**: Append random gene (if genome < genomeMaxLength)
+ *
+ * ## Probabilities
+ * ```
+ * P(mutation occurs) = geneInsertionDeletionRate
+ * P(deletion | mutation) = deletionRatio
+ * P(insertion | mutation) = 1 - deletionRatio
+ * ```
+ *
+ * Only active when simulator configured for variable genome lengths
+ * (geneInsertionDeletionRate > 0).
+ *
+ * @param[in,out] genome Genome to mutate (0 or 1 gene changed)
+ *
+ * @note Currently appends insertions; commented code shows random position insertion
+ * @see Params::geneInsertionDeletionRate, Params::deletionRatio, Params::genomeMaxLength
+ */
 void randomInsertDeletion(Genome& genome) {
   float probability = parameterMngrSingleton.geneInsertionDeletionRate;
   if (randomUint() / (float)RANDOM_UINT_MAX < probability) {
@@ -316,8 +562,25 @@ void randomInsertDeletion(Genome& genome) {
   }
 }
 
-/// This function causes point mutations in a genome with a probability defined
-/// by the parameter p.pointMutationRate.
+/**
+ * @brief Applies multiple point mutations across genome
+ *
+ * Iterates through all genes in genome, applying randomBitFlip() mutation
+ * to each gene independently with probability Params::pointMutationRate.
+ *
+ * ## Expected Mutations
+ * Expected number of mutations = genome.size() × pointMutationRate
+ * ```
+ * Example: 100-gene genome with pointMutationRate=0.01
+ *   → Expect ~1 mutation per genome on average
+ * ```
+ *
+ * @param[in,out] genome Genome to mutate (0+ genes modified)
+ *
+ * @note Each gene evaluated independently; possible to have 0 or many mutations
+ * @see randomBitFlip() for individual gene mutation mechanism
+ * @see Params::pointMutationRate for probability configuration
+ */
 void applyPointMutations(Genome& genome) {
   unsigned numberOfGenes = genome.size();
   while (numberOfGenes-- > 0) {
@@ -327,10 +590,47 @@ void applyPointMutations(Genome& genome) {
   }
 }
 
-/// This generates a child genome from one or two parent genomes.
-/// If the parameter p.sexualReproduction is true, two parents contribute
-/// genes to the offspring. The new genome may undergo mutation.
-/// Must be called in single-thread mode between generations
+/**
+ * @brief Generates offspring genome from parent genome(s) with mutations
+ *
+ * Creates child genome through reproduction (sexual or asexual) followed by
+ * mutation. Parent selection can be random or fitness-based depending on
+ * configuration.
+ *
+ * ## Parent Selection
+ * **Random Selection** (chooseParentsByFitness=false):
+ * - Uniform random choice from all candidates
+ *
+ * **Fitness-Based Selection** (chooseParentsByFitness=true):
+ * - Parents ordered by survival score (computed in survival-criteria.cpp)
+ * - Higher-scored parents more likely to be chosen
+ * - Selection: parent1 ∈ [1..N-1], parent2 ∈ [0..parent1-1]
+ *
+ * ## Reproduction Modes
+ * **Asexual** (sexualReproduction=false):
+ * - Clone random parent genome
+ *
+ * **Sexual** (sexualReproduction=true):
+ * - Start with longer parent genome
+ * - Overlay random contiguous slice from shorter parent
+ * - Crop to average of parent lengths (±1 gene if odd sum)
+ *
+ * ## Mutation Pipeline
+ * 1. Create base genome (sexual crossover or asexual clone)
+ * 2. Apply insertion/deletion mutation (randomInsertDeletion)
+ * 3. Apply point mutations (applyPointMutations)
+ *
+ * @param[in] parentGenomes Vector of candidate parent genomes (ordered by fitness)
+ * @return New offspring genome with mutations applied
+ *
+ * @pre parentGenomes must not be empty
+ * @pre Individual genomes must not be empty
+ * @post Result genome length ≤ genomeMaxLength
+ *
+ * @note **Thread Safety**: Must be called in single-thread mode between generations
+ * @see Params::sexualReproduction, Params::chooseParentsByFitness
+ * @see applyPointMutations(), randomInsertDeletion(), cropLength()
+ */
 Genome generateChildGenome(const std::vector<Genome>& parentGenomes) {
   /// random parent (or parents if sexual reproduction) with random
   /// mutations
