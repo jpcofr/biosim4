@@ -24,6 +24,7 @@ ENABLE_THREAD_SANITIZER=false
 VERBOSE=false
 DRY_RUN=false
 SHOW_INFO=false
+SHOW_DEPS=false
 PARALLEL_JOBS=$(sysctl -n hw.ncpu)
 RUN_TESTS=false
 TARGET=""
@@ -40,7 +41,7 @@ Usage: $0 [OPTIONS]
 
 ${BLUE}Build Type:${NC}
   -r, --release              Build in Release mode (default: Debug)
-  -d, --debug                Build in Debug mode (explicit)
+  -d, --debug                Build in Debug mode (default)
 
 ${BLUE}Build Targets:${NC}
   -b, --binaries-only        Build only binaries (default)
@@ -54,17 +55,18 @@ ${BLUE}Build System:${NC}
   -j, --jobs N               Parallel build jobs (default: ${PARALLEL_JOBS})
 
 ${BLUE}Build Options:${NC}
-  -c, --clean                Clean build (remove CMake cache, keep dependencies)
+  -c, --clean                Clean build (preserves FetchContent dependencies)
   --full-clean               Full clean (remove entire build directory)
-  --no-video                 Disable video generation support
-  --sanitizers               Enable AddressSanitizer + UndefinedBehaviorSanitizer
-  --thread-sanitizer         Enable ThreadSanitizer (mutually exclusive with --sanitizers)
+  --no-video                 Disable video generation (default: enabled)
+  --sanitizers               Enable AddressSanitizer + UndefinedBehaviorSanitizer (default: off)
+  --thread-sanitizer         Enable ThreadSanitizer (mutually exclusive with --sanitizers, default: off)
 
 ${BLUE}Testing:${NC}
-  --test                     Run tests after successful build
+  --test                     Run tests after successful build (default: off)
 
 ${BLUE}Information:${NC}
   -i, --info                 Show build configuration info and exit
+  --show-deps                Show preserved FetchContent dependencies and exit
   -v, --verbose              Verbose build output
   --dry-run                  Show commands without executing
   -h, --help                 Show this help message
@@ -72,12 +74,13 @@ ${BLUE}Information:${NC}
 ${BLUE}Examples:${NC}
   $0                                    # Debug build with Ninja
   $0 -r                                 # Release build
-  $0 -c -r                              # Clean Release build
+  $0 -c -r                              # Clean Release build (preserves deps)
   $0 --docs-only                        # Build only documentation
   $0 -a                                 # Build binaries and docs
   $0 -r --sanitizers                    # Release build with sanitizers
   $0 --target test_basic_types          # Build specific test
   $0 -i                                 # Show current configuration
+  $0 --show-deps                        # Show preserved dependencies
   $0 -r -j 8                            # Release build with 8 parallel jobs
   $0 --test                             # Build and run tests
 
@@ -167,6 +170,10 @@ while [[ $# -gt 0 ]]; do
             SHOW_INFO=true
             shift
             ;;
+        --show-deps)
+            SHOW_DEPS=true
+            shift
+            ;;
         -v|--verbose)
             VERBOSE=true
             shift
@@ -189,6 +196,66 @@ done
 
 # Navigate to project root
 cd "$PROJECT_ROOT"
+
+# Function to perform selective clean (preserves FetchContent dependencies)
+perform_selective_clean() {
+    if [ ! -d "$BUILD_DIR" ]; then
+        echo -e "${YELLOW}Build directory does not exist. Nothing to clean.${NC}"
+        return
+    fi
+
+    echo -e "${BLUE}Cleaning build directory (preserving FetchContent dependencies)...${NC}"
+
+    local current_dir=$(pwd)
+    cd "$BUILD_DIR"
+
+    # Remove CMake cache and configuration files
+    echo -e "  ${BLUE}•${NC} Removing CMake cache files..."
+    rm -f CMakeCache.txt cmake_install.cmake CPackConfig.cmake CPackSourceConfig.cmake CTestTestfile.cmake DartConfiguration.tcl
+
+    # Remove build system files
+    echo -e "  ${BLUE}•${NC} Removing build system files..."
+    rm -f Makefile build.ninja rules.ninja install_manifest.txt
+
+    # Remove all CMakeFiles EXCEPT dependency-related ones
+    echo -e "  ${BLUE}•${NC} Cleaning CMakeFiles (preserving dependencies)..."
+    if [ -d "CMakeFiles" ]; then
+        find CMakeFiles -mindepth 1 -maxdepth 1 \
+          ! -name '*googletest*' \
+          ! -name '*toml11*' \
+          ! -name '*cli11*' \
+          ! -name '*raylib*' \
+          ! -name '*spdlog*' \
+          -exec rm -rf {} + 2>/dev/null || true
+    fi
+
+    # Remove biosim4 build artifacts (not dependencies)
+    echo -e "  ${BLUE}•${NC} Removing biosim4 build artifacts..."
+    rm -rf src/ tests/
+
+    # Remove bin/ and lib/ directories (will be regenerated)
+    echo -e "  ${BLUE}•${NC} Removing bin/ and lib/ directories..."
+    rm -rf bin/ lib/
+
+    # Remove Testing directory (can be regenerated)
+    echo -e "  ${BLUE}•${NC} Removing Testing directory..."
+    rm -rf Testing/
+
+    echo ""
+    echo -e "${GREEN}✓ Selective clean completed!${NC}"
+    echo ""
+    echo -e "${BLUE}Preserved FetchContent dependencies (_deps/):${NC}"
+
+    # List preserved dependencies
+    for dep in googletest toml11 cli11 raylib spdlog; do
+        if [ -d "_deps/${dep}-src" ]; then
+            echo -e "  ${GREEN}✓${NC} ${dep}"
+        fi
+    done
+    echo ""
+
+    cd "$current_dir"
+}
 
 # Show build configuration info
 show_build_info() {
@@ -226,6 +293,65 @@ show_build_info() {
     echo ""
 }
 
+# Show preserved FetchContent dependencies
+show_dependencies() {
+    echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║   Preserved FetchContent Dependencies║${NC}"
+    echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
+    echo ""
+
+    if [ ! -d "$BUILD_DIR/_deps" ]; then
+        echo -e "${YELLOW}No build directory found at: $BUILD_DIR${NC}"
+        echo -e "${YELLOW}Run a build first to download dependencies.${NC}"
+        echo ""
+        return
+    fi
+
+    cd "$BUILD_DIR"
+
+    local found_any=false
+    local deps=("googletest" "toml11" "cli11" "raylib" "spdlog")
+
+    echo -e "${GREEN}Dependencies Status:${NC}"
+    for dep in "${deps[@]}"; do
+        if [ -d "_deps/${dep}-src" ]; then
+            found_any=true
+            local dep_path="_deps/${dep}-src"
+            local size=$(du -sh "$dep_path" 2>/dev/null | cut -f1)
+
+            # Try to get version info if available
+            local version=""
+            if [ -f "$dep_path/CMakeLists.txt" ]; then
+                version=$(grep -i "project.*VERSION" "$dep_path/CMakeLists.txt" | head -1 | sed -E 's/.*VERSION[[:space:]]+([0-9.]+).*/\1/' 2>/dev/null || echo "")
+            fi
+
+            if [ -n "$version" ]; then
+                echo -e "  ${GREEN}✓${NC} ${dep} (v${version}) - ${size}"
+            else
+                echo -e "  ${GREEN}✓${NC} ${dep} - ${size}"
+            fi
+        else
+            echo -e "  ${YELLOW}✗${NC} ${dep} (not downloaded)"
+        fi
+    done
+
+    echo ""
+
+    if [ "$found_any" = true ]; then
+        local total_size=$(du -sh "_deps" 2>/dev/null | cut -f1)
+        echo -e "${BLUE}Total dependencies size: ${total_size}${NC}"
+        echo ""
+        echo -e "${GREEN}Note:${NC} These dependencies are preserved during clean builds (-c flag)"
+        echo -e "      Use --full-clean to remove all dependencies"
+    else
+        echo -e "${YELLOW}No dependencies downloaded yet.${NC}"
+        echo -e "${YELLOW}Run a build to download and compile dependencies.${NC}"
+    fi
+
+    echo ""
+}
+
+
 # Validate mutually exclusive options
 if [ "$ENABLE_SANITIZERS" = true ] && [ "$ENABLE_THREAD_SANITIZER" = true ]; then
     echo -e "${RED}Error: --sanitizers and --thread-sanitizer are mutually exclusive${NC}"
@@ -240,6 +366,12 @@ fi
 # Show info and exit if requested
 if [ "$SHOW_INFO" = true ]; then
     show_build_info
+    exit 0
+fi
+
+# Show dependencies and exit if requested
+if [ "$SHOW_DEPS" = true ]; then
+    show_dependencies
     exit 0
 fi
 
@@ -258,13 +390,12 @@ fi
 
 cd "$BUILD_DIR"
 
-# Clean build if requested
+# Clean build if requested (selective clean preserving FetchContent dependencies)
 if [ "$CLEAN_BUILD" = true ]; then
-    echo -e "${YELLOW}Performing selective clean (preserving dependencies)...${NC}"
-    if [ "$DRY_RUN" = false ]; then
-        "$SCRIPT_DIR/clean-build.sh"
+    if [ "$DRY_RUN" = true ]; then
+        echo "[DRY RUN] Would perform selective clean (preserving FetchContent dependencies)"
     else
-        echo "[DRY RUN] Would execute: $SCRIPT_DIR/clean-build.sh"
+        perform_selective_clean
     fi
 fi
 

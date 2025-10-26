@@ -6,8 +6,8 @@
 # Standard builds
 ./scripts/build.sh              # Debug build (default)
 ./scripts/build.sh -r           # Release build
-./scripts/build.sh -c           # Clean debug build
-./scripts/build.sh -c -r        # Clean release build
+./scripts/build.sh -c           # Clean debug build (preserves deps)
+./scripts/build.sh -c -r        # Clean release build (preserves deps)
 
 # Testing
 ./scripts/build.sh --test                      # Build and run all tests
@@ -23,6 +23,7 @@
 
 # Information
 ./scripts/build.sh --info       # Show configuration
+./scripts/build.sh --show-deps  # Show preserved dependencies
 ./scripts/build.sh --help       # Full help
 ./scripts/build.sh --dry-run    # Preview without building
 ```
@@ -75,29 +76,34 @@ open build/docs/html/index.html
 ### Build Investigation
 ```bash
 ./scripts/build.sh --info           # Check current settings
+./scripts/build.sh --show-deps      # Check preserved dependencies
 ./scripts/build.sh -v               # Verbose build output
 ./scripts/build.sh -r --dry-run     # See what would happen
 ```
 
 ## ⚙️ Options at a Glance
 
-| Option               | Description                 |
-| -------------------- | --------------------------- |
-| `-r, --release`      | Release mode (optimized)    |
-| `-d, --debug`        | Debug mode (default)        |
-| `-c, --clean`        | Clean build (keep deps)     |
-| `--full-clean`       | Nuke entire build/          |
-| `-a, --all`          | Build binaries + docs       |
-| `-D, --docs-only`    | Build docs only             |
-| `-t, --target NAME`  | Build specific target       |
-| `-j, --jobs N`       | Parallel jobs (auto-detect) |
-| `--no-video`         | Disable video support       |
-| `--sanitizers`       | AddressSanitizer + UBSan    |
-| `--thread-sanitizer` | ThreadSanitizer             |
-| `--test`             | Run tests after build       |
-| `-i, --info`         | Show config and exit        |
-| `-v, --verbose`      | Verbose output              |
-| `--dry-run`          | Preview only                |
+| Option                | Description                  | Default       |
+| --------------------- | ---------------------------- | ------------- |
+| `-r, --release`       | Release mode (optimized)     | Debug         |
+| `-d, --debug`         | Debug mode                   | ✓ (default)   |
+| `-c, --clean`         | Clean (preserves deps)       | off           |
+| `--full-clean`        | Nuke entire build/           | off           |
+| `-a, --all`           | Build binaries + docs        | binaries only |
+| `-D, --docs-only`     | Build docs only              | off           |
+| `-b, --binaries-only` | Build binaries only          | ✓ (default)   |
+| `-t, --target NAME`   | Build specific target        | all targets   |
+| `-n, --ninja`         | Use Ninja generator          | ✓ (default)   |
+| `-m, --make`          | Use Unix Makefiles generator | off           |
+| `-j, --jobs N`        | Parallel jobs                | auto-detect   |
+| `--no-video`          | Disable video support        | video enabled |
+| `--sanitizers`        | AddressSanitizer + UBSan     | off           |
+| `--thread-sanitizer`  | ThreadSanitizer              | off           |
+| `--test`              | Run tests after build        | off           |
+| `-i, --info`          | Show config and exit         | -             |
+| `--show-deps`         | Show preserved deps and exit | -             |
+| `-v, --verbose`       | Verbose output               | off           |
+| `--dry-run`           | Preview only                 | off           |
 
 ## 🔧 Build Generators
 
@@ -110,11 +116,12 @@ open build/docs/html/index.html
 
 1. **Fast incremental builds**: Just run `./scripts/build.sh` (no clean needed)
 2. **Parallel builds**: Auto-uses all CPU cores (override with `-j N`)
-3. **Clean when needed**: Use `-c` for CMake issues, `--full-clean` rarely
+3. **Clean by default preserves dependencies**: `-c` keeps FetchContent artifacts (googletest, toml11, cli11, raylib, spdlog) for faster rebuilds
 4. **Test specific changes**: Use `--target` instead of rebuilding everything
 5. **Memory debugging**: Always use `--sanitizers` or `--thread-sanitizer`, not both
 6. **Check first**: Use `--info` to verify settings before long builds
 7. **Safe testing**: Use `--dry-run` to preview complex build commands
+8. **Full clean rarely needed**: Use `--full-clean` only when absolutely necessary (removes everything including dependencies)
 
 ## 🚨 Common Issues
 
@@ -126,7 +133,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 
 **Build fails after config changes:**
 ```bash
-./scripts/build.sh -c           # Clean and rebuild
+./scripts/build.sh -c           # Clean and rebuild (preserves deps)
 ```
 
 **Slow builds:**
