@@ -4,12 +4,11 @@
 
 set -e  # Exit on error
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Load UI library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/ui.sh"
+
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Default values
 BUILD_TYPE="Debug"
@@ -27,73 +26,71 @@ SHOW_INFO=false
 SHOW_DEPS=false
 PARALLEL_JOBS=$(sysctl -n hw.ncpu)
 RUN_TESTS=false
+RUN_QUICK_TEST=false
 TARGET=""
-
-# Script location
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Help message
 show_help() {
-    cat << EOF
-${GREEN}BioSim4 Build Script${NC}
-Usage: $0 [OPTIONS]
-
-${BLUE}Build Type:${NC}
-  -r, --release              Build in Release mode (default: Debug)
-  -d, --debug                Build in Debug mode (default)
-
-${BLUE}Build Targets:${NC}
-  -b, --binaries-only        Build only binaries (default)
-  -D, --docs-only            Build only documentation
-  -a, --all                  Build both binaries and documentation
-  -t, --target TARGET        Build specific target (e.g., biosim4, test_basic_types)
-
-${BLUE}Build System:${NC}
-  -n, --ninja                Use Ninja generator (default)
-  -m, --make                 Use Unix Makefiles generator
-  -j, --jobs N               Parallel build jobs (default: ${PARALLEL_JOBS})
-
-${BLUE}Build Options:${NC}
-  -c, --clean                Clean build (preserves FetchContent dependencies)
-  --full-clean               Full clean (remove entire build directory)
-  --no-video                 Disable video generation (default: enabled)
-  --sanitizers               Enable AddressSanitizer + UndefinedBehaviorSanitizer (default: off)
-  --thread-sanitizer         Enable ThreadSanitizer (mutually exclusive with --sanitizers, default: off)
-
-${BLUE}Testing:${NC}
-  --test                     Run tests after successful build (default: off)
-
-${BLUE}Information:${NC}
-  -i, --info                 Show build configuration info and exit
-  --show-deps                Show preserved FetchContent dependencies and exit
-  -v, --verbose              Verbose build output
-  --dry-run                  Show commands without executing
-  -h, --help                 Show this help message
-
-${BLUE}Examples:${NC}
-  $0                                    # Debug build with Ninja
-  $0 -r                                 # Release build
-  $0 -c -r                              # Clean Release build (preserves deps)
-  $0 --docs-only                        # Build only documentation
-  $0 -a                                 # Build binaries and docs
-  $0 -r --sanitizers                    # Release build with sanitizers
-  $0 --target test_basic_types          # Build specific test
-  $0 -i                                 # Show current configuration
-  $0 --show-deps                        # Show preserved dependencies
-  $0 -r -j 8                            # Release build with 8 parallel jobs
-  $0 --test                             # Build and run tests
-
-${BLUE}Common Workflows:${NC}
-  Development cycle:          $0 -d
-  Production build:           $0 -r
-  Memory leak testing:        $0 -d --sanitizers
-  Race condition testing:     $0 -d --thread-sanitizer
-  Fresh start:                $0 --full-clean -d
-  Documentation update:       $0 --docs-only
-  Quick test:                 $0 --target test_basic_types && ./build/bin/test_basic_types
-
-EOF
+    ui_success "BioSim4 Build Script"
+    echo "Usage: $0 [OPTIONS]"
+    ui_nl
+    ui_help_section "Build Type"
+    ui_help_option "-r, --release" "Build in Release mode (default: Debug)"
+    ui_help_option "-d, --debug" "Build in Debug mode (default)"
+    ui_nl
+    ui_help_section "Build Targets"
+    ui_help_option "-b, --binaries-only" "Build only binaries (default)"
+    ui_help_option "-D, --docs-only" "Build only documentation"
+    ui_help_option "-a, --all" "Build both binaries and documentation"
+    ui_help_option "-t, --target TARGET" "Build specific target (e.g., biosim4, test_basic_types)"
+    ui_nl
+    ui_help_section "Build System"
+    ui_help_option "-n, --ninja" "Use Ninja generator (default)"
+    ui_help_option "-m, --make" "Use Unix Makefiles generator"
+    ui_help_option "-j, --jobs N" "Parallel build jobs (default: ${PARALLEL_JOBS})"
+    ui_nl
+    ui_help_section "Build Options"
+    ui_help_option "-c, --clean" "Clean build (preserves FetchContent dependencies)"
+    ui_help_option "--full-clean" "Full clean (remove entire build directory)"
+    ui_help_option "--no-video" "Disable video generation (default: enabled)"
+    ui_help_option "--sanitizers" "Enable AddressSanitizer + UndefinedBehaviorSanitizer (default: off)"
+    ui_help_option "--thread-sanitizer" "Enable ThreadSanitizer (mutually exclusive with --sanitizers, default: off)"
+    ui_nl
+    ui_help_section "Testing"
+    ui_help_option "--test" "Run tests after successful build (default: off)"
+    ui_help_option "--quick-test" "Run biosim4 with quick preset after build (default: off)"
+    ui_nl
+    ui_help_section "Information"
+    ui_help_option "-i, --info" "Show build configuration info and exit"
+    ui_help_option "--show-deps" "Show preserved FetchContent dependencies and exit"
+    ui_help_option "-v, --verbose" "Verbose build output"
+    ui_help_option "--dry-run" "Show commands without executing"
+    ui_help_option "-h, --help" "Show this help message"
+    ui_nl
+    ui_help_section "Examples"
+    ui_help_example "$0" "Debug build with Ninja"
+    ui_help_example "$0 -r" "Release build"
+    ui_help_example "$0 -c -r" "Clean Release build (preserves deps)"
+    ui_help_example "$0 --docs-only" "Build only documentation"
+    ui_help_example "$0 -a" "Build binaries and docs"
+    ui_help_example "$0 -r --sanitizers" "Release build with sanitizers"
+    ui_help_example "$0 --target test_basic_types" "Build specific test"
+    ui_help_example "$0 -i" "Show current configuration"
+    ui_help_example "$0 --show-deps" "Show preserved dependencies"
+    ui_help_example "$0 -r -j 8" "Release build with 8 parallel jobs"
+    ui_help_example "$0 --test" "Build and run tests"
+    ui_help_example "$0 --quick-test" "Build and run quick simulation"
+    ui_nl
+    ui_help_section "Common Workflows"
+    ui_keyval "Development cycle" "$0 -d"
+    ui_keyval "Production build" "$0 -r"
+    ui_keyval "Memory leak testing" "$0 -d --sanitizers"
+    ui_keyval "Race condition testing" "$0 -d --thread-sanitizer"
+    ui_keyval "Fresh start" "$0 --full-clean -d"
+    ui_keyval "Documentation update" "$0 --docs-only"
+    ui_keyval "Quick test" "$0 --quick-test"
+    ui_keyval "Specific unit test" "$0 --target test_basic_types && ./build/bin/test_basic_types"
+    ui_nl
 }
 
 # Parse arguments
@@ -143,9 +140,9 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --full-clean)
-            echo -e "${YELLOW}Removing entire build directory...${NC}"
+            ui_warn "Removing entire build directory..."
             rm -rf "$PROJECT_ROOT/$BUILD_DIR"
-            echo -e "${GREEN}Full clean complete.${NC}"
+            ui_success "Full clean complete."
             exit 0
             ;;
         --no-video)
@@ -164,6 +161,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --test)
             RUN_TESTS=true
+            shift
+            ;;
+        --quick-test)
+            RUN_QUICK_TEST=true
             shift
             ;;
         -i|--info)
@@ -187,7 +188,7 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo -e "${RED}Unknown option: $1${NC}"
+            ui_error "Unknown option: $1"
             show_help
             exit 1
             ;;
@@ -200,25 +201,25 @@ cd "$PROJECT_ROOT"
 # Function to perform selective clean (preserves FetchContent dependencies)
 perform_selective_clean() {
     if [ ! -d "$BUILD_DIR" ]; then
-        echo -e "${YELLOW}Build directory does not exist. Nothing to clean.${NC}"
+        ui_warn "Build directory does not exist. Nothing to clean."
         return
     fi
 
-    echo -e "${BLUE}Cleaning build directory (preserving FetchContent dependencies)...${NC}"
+    ui_step "Cleaning build directory (preserving FetchContent dependencies)..."
 
     local current_dir=$(pwd)
     cd "$BUILD_DIR"
 
     # Remove CMake cache and configuration files
-    echo -e "  ${BLUE}•${NC} Removing CMake cache files..."
+    ui_bullet "Removing CMake cache files..."
     rm -f CMakeCache.txt cmake_install.cmake CPackConfig.cmake CPackSourceConfig.cmake CTestTestfile.cmake DartConfiguration.tcl
 
     # Remove build system files
-    echo -e "  ${BLUE}•${NC} Removing build system files..."
+    ui_bullet "Removing build system files..."
     rm -f Makefile build.ninja rules.ninja install_manifest.txt
 
     # Remove all CMakeFiles EXCEPT dependency-related ones
-    echo -e "  ${BLUE}•${NC} Cleaning CMakeFiles (preserving dependencies)..."
+    ui_bullet "Cleaning CMakeFiles (preserving dependencies)..."
     if [ -d "CMakeFiles" ]; then
         find CMakeFiles -mindepth 1 -maxdepth 1 \
           ! -name '*googletest*' \
@@ -230,80 +231,77 @@ perform_selective_clean() {
     fi
 
     # Remove biosim4 build artifacts (not dependencies)
-    echo -e "  ${BLUE}•${NC} Removing biosim4 build artifacts..."
+    ui_bullet "Removing biosim4 build artifacts..."
     rm -rf src/ tests/
 
     # Remove bin/ and lib/ directories (will be regenerated)
-    echo -e "  ${BLUE}•${NC} Removing bin/ and lib/ directories..."
+    ui_bullet "Removing bin/ and lib/ directories..."
     rm -rf bin/ lib/
 
     # Remove Testing directory (can be regenerated)
-    echo -e "  ${BLUE}•${NC} Removing Testing directory..."
+    ui_bullet "Removing Testing directory..."
     rm -rf Testing/
 
-    echo ""
-    echo -e "${GREEN}✓ Selective clean completed!${NC}"
-    echo ""
-    echo -e "${BLUE}Preserved FetchContent dependencies (_deps/):${NC}"
+    ui_nl
+    ui_success "✓ Selective clean completed!"
+    ui_nl
+    ui_info "Preserved FetchContent dependencies (_deps/):"
 
     # List preserved dependencies
     for dep in googletest toml11 cli11 raylib spdlog; do
         if [ -d "_deps/${dep}-src" ]; then
-            echo -e "  ${GREEN}✓${NC} ${dep}"
+            ui_check "${dep}"
         fi
     done
-    echo ""
+    ui_nl
 
     cd "$current_dir"
 }
 
 # Show build configuration info
 show_build_info() {
-    echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║     BioSim4 Build Configuration      ║${NC}"
-    echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
-    echo ""
-    echo -e "${GREEN}Build Settings:${NC}"
-    echo "  Build Type:           $BUILD_TYPE"
-    echo "  Generator:            $BUILD_GENERATOR"
-    echo "  Build Directory:      $BUILD_DIR"
-    echo "  Parallel Jobs:        $PARALLEL_JOBS"
-    echo ""
-    echo -e "${GREEN}Targets:${NC}"
-    echo "  Build Binaries:       $BUILD_BINARIES"
-    echo "  Build Documentation:  $BUILD_DOCS"
+    ui_box_header "BioSim4 Build Configuration" 40
+    ui_nl
+    ui_subsection "Build Settings"
+    ui_keyval "Build Type" "$BUILD_TYPE"
+    ui_keyval "Generator" "$BUILD_GENERATOR"
+    ui_keyval "Build Directory" "$BUILD_DIR"
+    ui_keyval "Parallel Jobs" "$PARALLEL_JOBS"
+    ui_nl
+    ui_subsection "Targets"
+    ui_keyval "Build Binaries" "$BUILD_BINARIES"
+    ui_keyval "Build Documentation" "$BUILD_DOCS"
     if [ -n "$TARGET" ]; then
-        echo "  Specific Target:      $TARGET"
+        ui_keyval "Specific Target" "$TARGET"
     fi
-    echo ""
-    echo -e "${GREEN}Options:${NC}"
-    echo "  Video Generation:     $ENABLE_VIDEO"
-    echo "  Sanitizers:           $ENABLE_SANITIZERS"
-    echo "  Thread Sanitizer:     $ENABLE_THREAD_SANITIZER"
-    echo "  Clean Build:          $CLEAN_BUILD"
-    echo "  Run Tests:            $RUN_TESTS"
-    echo "  Verbose:              $VERBOSE"
-    echo ""
-    echo -e "${GREEN}Environment:${NC}"
-    echo "  Project Root:         $PROJECT_ROOT"
-    echo "  Clang++:              $(command -v clang++ 2>/dev/null || echo 'not found')"
-    echo "  CMake:                $(command -v cmake 2>/dev/null || echo 'not found') $(cmake --version 2>/dev/null | head -1 | awk '{print $3}')"
-    echo "  Ninja:                $(command -v ninja 2>/dev/null || echo 'not found')"
-    echo "  Doxygen:              $(command -v doxygen 2>/dev/null || echo 'not found')"
-    echo ""
+    ui_nl
+    ui_subsection "Options"
+    ui_keyval "Video Generation" "$ENABLE_VIDEO"
+    ui_keyval "Sanitizers" "$ENABLE_SANITIZERS"
+    ui_keyval "Thread Sanitizer" "$ENABLE_THREAD_SANITIZER"
+    ui_keyval "Clean Build" "$CLEAN_BUILD"
+    ui_keyval "Run Tests" "$RUN_TESTS"
+    ui_keyval "Run Quick Test" "$RUN_QUICK_TEST"
+    ui_keyval "Verbose" "$VERBOSE"
+    ui_nl
+    ui_subsection "Environment"
+    ui_keyval "Project Root" "$PROJECT_ROOT"
+    ui_keyval "Clang++" "$(command -v clang++ 2>/dev/null || echo 'not found')"
+    ui_keyval "CMake" "$(command -v cmake 2>/dev/null || echo 'not found') $(cmake --version 2>/dev/null | head -1 | awk '{print $3}')"
+    ui_keyval "Ninja" "$(command -v ninja 2>/dev/null || echo 'not found')"
+    ui_keyval "Doxygen" "$(command -v doxygen 2>/dev/null || echo 'not found')"
+    ui_nl
 }
 
 # Show preserved FetchContent dependencies
 show_dependencies() {
-    echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║   Preserved FetchContent Dependencies║${NC}"
-    echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
-    echo ""
+    ui_box_header "Preserved FetchContent Dependencies" 40
+    ui_nl
 
     if [ ! -d "$BUILD_DIR/_deps" ]; then
-        echo -e "${YELLOW}No build directory found at: $BUILD_DIR${NC}"
-        echo -e "${YELLOW}Run a build first to download dependencies.${NC}"
-        echo ""
+        ui_warn "No build directory found at: $BUILD_DIR"
+        ui_warn "Run a build first to download dependencies."
+        ui_nl
         return
     fi
 
@@ -312,7 +310,7 @@ show_dependencies() {
     local found_any=false
     local deps=("googletest" "toml11" "cli11" "raylib" "spdlog")
 
-    echo -e "${GREEN}Dependencies Status:${NC}"
+    ui_subsection "Dependencies Status"
     for dep in "${deps[@]}"; do
         if [ -d "_deps/${dep}-src" ]; then
             found_any=true
@@ -326,41 +324,39 @@ show_dependencies() {
             fi
 
             if [ -n "$version" ]; then
-                echo -e "  ${GREEN}✓${NC} ${dep} (v${version}) - ${size}"
+                ui_check "${dep} (v${version}) - ${size}"
             else
-                echo -e "  ${GREEN}✓${NC} ${dep} - ${size}"
+                ui_check "${dep} - ${size}"
             fi
         else
-            echo -e "  ${YELLOW}✗${NC} ${dep} (not downloaded)"
+            ui_cross "${dep} (not downloaded)"
         fi
     done
 
-    echo ""
+    ui_nl
 
     if [ "$found_any" = true ]; then
         local total_size=$(du -sh "_deps" 2>/dev/null | cut -f1)
-        echo -e "${BLUE}Total dependencies size: ${total_size}${NC}"
-        echo ""
-        echo -e "${GREEN}Note:${NC} These dependencies are preserved during clean builds (-c flag)"
-        echo -e "      Use --full-clean to remove all dependencies"
+        ui_info "Total dependencies size: ${total_size}"
+        ui_nl
+        ui_success "Note: These dependencies are preserved during clean builds (-c flag)"
+        echo "      Use --full-clean to remove all dependencies"
     else
-        echo -e "${YELLOW}No dependencies downloaded yet.${NC}"
-        echo -e "${YELLOW}Run a build to download and compile dependencies.${NC}"
+        ui_warn "No dependencies downloaded yet."
+        ui_warn "Run a build to download and compile dependencies."
     fi
 
-    echo ""
+    ui_nl
 }
 
 
 # Validate mutually exclusive options
 if [ "$ENABLE_SANITIZERS" = true ] && [ "$ENABLE_THREAD_SANITIZER" = true ]; then
-    echo -e "${RED}Error: --sanitizers and --thread-sanitizer are mutually exclusive${NC}"
-    exit 1
+    ui_die "Error: --sanitizers and --thread-sanitizer are mutually exclusive" 1
 fi
 
 if [ "$BUILD_DOCS" = true ] && [ "$BUILD_BINARIES" = false ] && [ -n "$TARGET" ]; then
-    echo -e "${RED}Error: Cannot specify --target with --docs-only${NC}"
-    exit 1
+    ui_die "Error: Cannot specify --target with --docs-only" 1
 fi
 
 # Show info and exit if requested
@@ -376,7 +372,7 @@ if [ "$SHOW_DEPS" = true ]; then
 fi
 
 # Print configuration summary
-echo -e "${GREEN}Starting BioSim4 Build${NC}"
+ui_success "Starting BioSim4 Build"
 echo "  Mode: $BUILD_TYPE | Generator: $BUILD_GENERATOR | Jobs: $PARALLEL_JOBS"
 
 # Ensure Homebrew binaries are in PATH
@@ -384,7 +380,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 
 # Create build directory if it doesn't exist
 if [ ! -d "$BUILD_DIR" ]; then
-    echo -e "${BLUE}Creating build directory...${NC}"
+    ui_step "Creating build directory..."
     mkdir -p "$BUILD_DIR"
 fi
 
@@ -410,7 +406,7 @@ CMAKE_OPTS=(
 )
 
 # Run CMake configuration
-echo -e "${BLUE}Configuring CMake...${NC}"
+ui_step "Configuring CMake..."
 if [ "$DRY_RUN" = true ]; then
     echo "[DRY RUN] cmake ${CMAKE_OPTS[*]} .."
 else
@@ -442,12 +438,12 @@ if [ "$BUILD_BINARIES" = true ]; then
         BUILD_CMD="$BUILD_CMD --target $TARGET"
     fi
 
-    echo -e "${BLUE}Building binaries...${NC}"
+    ui_step "Building binaries..."
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] $BUILD_CMD"
     else
         eval "$BUILD_CMD"
-        echo -e "${GREEN}✓ Binaries built successfully${NC}"
+        ui_check "Binaries built successfully"
     fi
 fi
 
@@ -455,7 +451,7 @@ fi
 if [ "$BUILD_DOCS" = true ]; then
     if [ "$BUILD_BINARIES" = false ]; then
         # Need to configure with docs enabled
-        echo -e "${BLUE}Configuring for documentation build...${NC}"
+        ui_step "Configuring for documentation build..."
         if [ "$DRY_RUN" = true ]; then
             echo "[DRY RUN] cmake -DBUILD_DOCUMENTATION=ON .."
         else
@@ -463,12 +459,12 @@ if [ "$BUILD_DOCS" = true ]; then
         fi
     fi
 
-    echo -e "${BLUE}Building documentation...${NC}"
+    ui_step "Building documentation..."
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] cmake --build . --target docs"
     else
         cmake --build . --target docs
-        echo -e "${GREEN}✓ Documentation built successfully${NC}"
+        ui_check "Documentation built successfully"
         if [ -d "docs/html" ]; then
             echo "  Documentation available at: $BUILD_DIR/docs/html/index.html"
         fi
@@ -477,34 +473,62 @@ fi
 
 # Run tests if requested
 if [ "$RUN_TESTS" = true ] && [ "$BUILD_BINARIES" = true ]; then
-    echo -e "${BLUE}Running tests...${NC}"
+    ui_step "Running tests..."
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] ctest --output-on-failure"
     else
         ctest --output-on-failure
-        echo -e "${GREEN}✓ Tests completed${NC}"
+        ui_check "Tests completed"
+    fi
+fi
+
+# Run quick test if requested
+if [ "$RUN_QUICK_TEST" = true ] && [ "$BUILD_BINARIES" = true ]; then
+    ui_step "Running biosim4 with quick preset..."
+    if [ "$DRY_RUN" = true ]; then
+        echo "[DRY RUN] ./bin/biosim4 --preset quick"
+    else
+        if [ ! -f "./bin/biosim4" ]; then
+            ui_error "biosim4 binary not found at ./bin/biosim4"
+            exit 1
+        fi
+        ./bin/biosim4 --preset quick
+        ui_check "Quick test completed"
     fi
 fi
 
 # Final summary
-echo ""
-echo -e "${GREEN}╔══════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║         Build Complete! 🚀           ║${NC}"
-echo -e "${GREEN}╚══════════════════════════════════════╝${NC}"
-echo ""
+ui_nl
+ui_box_footer_success "Build Complete! 🚀" 40
+ui_nl
 if [ "$BUILD_BINARIES" = true ]; then
-    echo -e "${BLUE}Binaries:${NC}"
-    echo "  Main executable:  $BUILD_DIR/bin/biosim4"
+    ui_subsection "Binaries"
+    # Show full absolute paths for easy copying (we're already in BUILD_DIR at this point)
+    MAIN_EXE_PATH="$(pwd)/bin/biosim4"
+    ui_keyval "Main executable" "$MAIN_EXE_PATH"
+
     if [ -z "$TARGET" ]; then
-        echo "  Tests:            $BUILD_DIR/bin/test_*"
+        TEST_DIR_PATH="$(pwd)/bin"
+        ui_keyval "Test binaries" "$TEST_DIR_PATH/test_*"
+    elif [ -n "$TARGET" ]; then
+        # Show specific target if built
+        if [ -f "bin/$TARGET" ]; then
+            TARGET_PATH="$(pwd)/bin/$TARGET"
+            ui_keyval "Target binary" "$TARGET_PATH"
+        fi
     fi
-    echo ""
-    echo -e "${BLUE}Run:${NC}"
-    echo "  cd $BUILD_DIR && ./bin/biosim4 ../config/biosim4.toml"
+    ui_nl
+    ui_subsection "Run Command"
+    echo "  $MAIN_EXE_PATH $PROJECT_ROOT/config/biosim4.toml"
 fi
 
-if [ "$BUILD_DOCS" = true ] && [ -d "$BUILD_DIR/docs/html" ]; then
-    echo -e "${BLUE}Documentation:${NC}"
-    echo "  open $BUILD_DIR/docs/html/index.html"
-    echo ""
+if [ "$BUILD_DOCS" = true ] && [ -d "docs/html" ]; then
+    ui_nl
+    ui_subsection "Documentation"
+    DOCS_PATH="$(pwd)/docs/html/index.html"
+    ui_keyval "HTML docs" "$DOCS_PATH"
+    ui_nl
+    ui_subsection "Open Documentation"
+    echo "  open $DOCS_PATH"
+    ui_nl
 fi

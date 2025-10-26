@@ -4,51 +4,37 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Load UI library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/ui.sh"
 
-cd "$(dirname "$0")/.."
+cd "$SCRIPT_DIR/.."
 
-echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  🎬 BioSim4 Video Generation Test    ║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
-echo ""
+ui_box_header "🎬 BioSim4 Video Generation Test" 40
+ui_nl
 
-if [ ! -f "build/bin/biosim4" ]; then
-    echo -e "${RED}Error: biosim4 binary not found${NC}"
-    echo ""
-    echo -e "${YELLOW}Build it first:${NC}"
-    echo "   cd build && ninja"
+if ! ui_require_file "build/bin/biosim4" "Build it first: cd build && ninja"; then
     exit 1
 fi
 
 # Clean old videos
-echo -e "${CYAN}🧹 Cleaning old videos...${NC}"
+ui_clean "Cleaning old videos..."
 rm -f output/images/*.avi output/images/*.mp4
 
 # Run simulation with video-test preset
-echo -e "${BLUE}▶️  Running simulation (this may take a minute)...${NC}"
+ui_step "Running simulation (this may take a minute)..."
 ./build/bin/biosim4 --preset video-test
 
 # Automatically verify videos
-echo ""
-echo -e "${CYAN}🔍 Verifying videos...${NC}"
+ui_nl
+ui_inspect "Verifying videos..."
 ./build/bin/biosim4 --verify-videos
 
 # Ask if user wants to review videos interactively
-echo ""
-read -p "$(echo -e ${YELLOW})Would you like to review videos interactively? (y/N) $(echo -e ${NC})" -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+ui_nl
+if ui_confirm "Would you like to review videos interactively?" false; then
     ./build/bin/biosim4 --review-videos
 fi
 
-echo ""
-echo -e "${GREEN}╔══════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║   ✅ Video test completed!           ║${NC}"
-echo -e "${GREEN}╚══════════════════════════════════════╝${NC}"
+ui_nl
+ui_box_footer_success "✅ Video test completed!" 40

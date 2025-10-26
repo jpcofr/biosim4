@@ -4,16 +4,10 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
-
-# Script location
+# Load UI library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/ui.sh"
+
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Options
@@ -24,47 +18,47 @@ VERBOSE=false
 FILES=()
 
 show_help() {
-    echo -e "${GREEN}BioSim4 Git Hooks Runner${NC}"
+    ui_success "BioSim4 Git Hooks Runner"
     echo "Run pre-commit hooks manually for code quality checks"
-    echo ""
-    echo -e "${BLUE}Usage:${NC}"
+    ui_nl
+    ui_help_section "Usage"
     echo "  $0 [OPTIONS] [FILES...]"
-    echo ""
-    echo -e "${BLUE}Options:${NC}"
-    echo "  -a, --all              Run on all files (not just staged)"
-    echo "  -s, --stage STAGE      Run hooks for specific stage (default: commit)"
+    ui_nl
+    ui_help_section "Options"
+    ui_help_option "-a, --all" "Run on all files (not just staged)"
+    ui_help_option "-s, --stage STAGE" "Run hooks for specific stage (default: commit)"
     echo "                         Stages: commit, push, manual"
-    echo "  -d, --diff             Show diff of changes after running"
-    echo "  -v, --verbose          Verbose output"
-    echo "  -h, --help             Show this help message"
-    echo ""
-    echo -e "${BLUE}Examples:${NC}"
-    echo "  $0                                  # Run on staged files"
-    echo "  $0 -a                               # Run on all files"
-    echo "  $0 src/main.cpp                     # Run on specific file"
-    echo "  $0 -a -d                            # Run on all + show changes"
-    echo "  $0 --stage manual                   # Run manual-stage hooks only"
-    echo ""
-    echo -e "${BLUE}Hook Stages:${NC}"
-    echo "  commit    - Hooks that run on 'git commit' (default)"
-    echo "  push      - Hooks that run on 'git push'"
-    echo "  manual    - Hooks configured to run manually only"
-    echo ""
-    echo -e "${BLUE}Common Workflows:${NC}"
-    echo "  Before committing:        $0"
-    echo "  Full project check:       $0 -a"
-    echo "  Check specific files:     $0 src/main.cpp include/params.h"
-    echo "  Run manual hooks:         $0 --stage manual -a"
-    echo ""
-    echo -e "${BLUE}What This Runs:${NC}"
-    echo "  • C++ formatting (clang-format)"
-    echo "  • Python formatting (black)"
-    echo "  • Python import sorting (isort)"
-    echo "  • Python linting (flake8)"
-    echo "  • Trailing whitespace removal"
-    echo "  • End-of-file fixes"
-    echo "  • YAML validation"
-    echo ""
+    ui_help_option "-d, --diff" "Show diff of changes after running"
+    ui_help_option "-v, --verbose" "Verbose output"
+    ui_help_option "-h, --help" "Show this help message"
+    ui_nl
+    ui_help_section "Examples"
+    ui_help_example "$0" "Run on staged files"
+    ui_help_example "$0 -a" "Run on all files"
+    ui_help_example "$0 src/main.cpp" "Run on specific file"
+    ui_help_example "$0 -a -d" "Run on all + show changes"
+    ui_help_example "$0 --stage manual" "Run manual-stage hooks only"
+    ui_nl
+    ui_help_section "Hook Stages"
+    ui_help_option "commit" "Hooks that run on 'git commit' (default)"
+    ui_help_option "push" "Hooks that run on 'git push'"
+    ui_help_option "manual" "Hooks configured to run manually only"
+    ui_nl
+    ui_help_section "Common Workflows"
+    ui_keyval "Before committing" "$0"
+    ui_keyval "Full project check" "$0 -a"
+    ui_keyval "Check specific files" "$0 src/main.cpp include/params.h"
+    ui_keyval "Run manual hooks" "$0 --stage manual -a"
+    ui_nl
+    ui_help_section "What This Runs"
+    ui_bullet "C++ formatting (clang-format)"
+    ui_bullet "Python formatting (black)"
+    ui_bullet "Python import sorting (isort)"
+    ui_bullet "Python linting (flake8)"
+    ui_bullet "Trailing whitespace removal"
+    ui_bullet "End-of-file fixes"
+    ui_bullet "YAML validation"
+    ui_nl
 }
 
 # Parse arguments
@@ -106,43 +100,33 @@ done
 cd "$PROJECT_ROOT"
 
 # Check if pre-commit is installed
-if ! command -v pre-commit &> /dev/null; then
-    echo -e "${RED}Error: pre-commit is not installed${NC}"
-    echo ""
-    echo "Install it with:"
-    echo "  pip install pre-commit"
-    echo "  # or"
-    echo "  brew install pre-commit"
-    echo ""
+if ! ui_require_command "pre-commit" "Install it with: pip install pre-commit (or) brew install pre-commit"; then
+    ui_nl
     echo "Then install hooks:"
     echo "  pre-commit install"
-    echo ""
+    ui_nl
     echo "See doc/PRECOMMIT_QUICKSTART.md for details"
     exit 1
 fi
 
 # Check if hooks are installed
 if [ ! -f ".git/hooks/pre-commit" ]; then
-    echo -e "${YELLOW}Warning: Pre-commit hooks not installed in this repository${NC}"
-    echo ""
-    read -p "Install hooks now? (Y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        echo -e "${BLUE}Installing pre-commit hooks...${NC}"
+    ui_warn "Pre-commit hooks not installed in this repository"
+    ui_nl
+    if ui_confirm "Install hooks now?" true; then
+        ui_step "Installing pre-commit hooks..."
         pre-commit install
-        echo -e "${GREEN}✓ Hooks installed${NC}"
-        echo ""
+        ui_check "Hooks installed"
+        ui_nl
     else
         echo "To install later, run: pre-commit install"
-        echo ""
+        ui_nl
     fi
 fi
 
 # Display header
-echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     BioSim4 Git Hooks Runner         ║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
-echo ""
+ui_box_header "BioSim4 Git Hooks Runner" 40
+ui_nl
 
 # Build command
 CMD="pre-commit run"
@@ -159,52 +143,48 @@ fi
 
 # Determine scope
 if [ ${#FILES[@]} -gt 0 ]; then
-    echo -e "${CYAN}Running hooks on specific files...${NC}"
+    ui_highlight "Running hooks on specific files..."
     for file in "${FILES[@]}"; do
-        echo "  • $file"
+        ui_bullet "$file"
     done
     CMD="$CMD --files ${FILES[*]}"
 elif [ "$RUN_ALL" = true ]; then
-    echo -e "${CYAN}Running hooks on all files...${NC}"
+    ui_highlight "Running hooks on all files..."
     CMD="$CMD --all-files"
 else
-    echo -e "${CYAN}Running hooks on staged files...${NC}"
+    ui_highlight "Running hooks on staged files..."
 fi
 
-echo ""
-echo -e "${BLUE}Command:${NC} $CMD"
-echo ""
+ui_nl
+ui_keyval "Command" "$CMD"
+ui_nl
 
 # Run pre-commit
 if eval "$CMD"; then
-    echo ""
-    echo -e "${GREEN}╔══════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║       All Hooks Passed! ✓            ║${NC}"
-    echo -e "${GREEN}╚══════════════════════════════════════╝${NC}"
+    ui_nl
+    ui_box_footer_success "All Hooks Passed! ✓" 40
 
     # Show diff if requested
     if [ "$SHOW_DIFF" = true ]; then
-        echo ""
-        echo -e "${BLUE}Changes made by hooks:${NC}"
+        ui_nl
+        ui_info "Changes made by hooks:"
         if git diff --color=always | head -100; then
-            echo ""
-            echo -e "${YELLOW}(Showing first 100 lines of diff)${NC}"
+            ui_nl
+            ui_warn "(Showing first 100 lines of diff)"
         fi
     fi
 
     exit 0
 else
-    echo ""
-    echo -e "${RED}╔══════════════════════════════════════╗${NC}"
-    echo -e "${RED}║       Some Hooks Failed ✗            ║${NC}"
-    echo -e "${RED}╚══════════════════════════════════════╝${NC}"
-    echo ""
-    echo -e "${YELLOW}The hooks may have automatically fixed some issues.${NC}"
-    echo -e "${YELLOW}Review the changes and stage them:${NC}"
-    echo ""
+    ui_nl
+    ui_box_footer_error "Some Hooks Failed ✗" 40
+    ui_nl
+    ui_warn "The hooks may have automatically fixed some issues."
+    ui_warn "Review the changes and stage them:"
+    ui_nl
     echo "  git diff              # Review changes"
     echo "  git add <files>       # Stage fixes"
     echo "  $0                    # Run hooks again"
-    echo ""
+    ui_nl
     exit 1
 fi

@@ -11,6 +11,7 @@
 
 # Testing
 ./scripts/build.sh --test                      # Build and run all tests
+./scripts/build.sh --quick-test                # Build and run quick simulation
 ./scripts/build.sh --target test_basic_types   # Build specific test
 
 # Documentation
@@ -40,6 +41,8 @@
 ### Testing Changes
 ```bash
 ./scripts/build.sh --test       # Build and verify
+# Or run quick simulation:
+./scripts/build.sh --quick-test
 # Or target specific test:
 ./scripts/build.sh --target test_neural_net_wiring
 ./build/bin/test_neural_net_wiring
@@ -100,6 +103,7 @@ open build/docs/html/index.html
 | `--sanitizers`        | AddressSanitizer + UBSan     | off           |
 | `--thread-sanitizer`  | ThreadSanitizer              | off           |
 | `--test`              | Run tests after build        | off           |
+| `--quick-test`        | Run quick simulation         | off           |
 | `-i, --info`          | Show config and exit         | -             |
 | `--show-deps`         | Show preserved deps and exit | -             |
 | `-v, --verbose`       | Verbose output               | off           |
@@ -118,10 +122,11 @@ open build/docs/html/index.html
 2. **Parallel builds**: Auto-uses all CPU cores (override with `-j N`)
 3. **Clean by default preserves dependencies**: `-c` keeps FetchContent artifacts (googletest, toml11, cli11, raylib, spdlog) for faster rebuilds
 4. **Test specific changes**: Use `--target` instead of rebuilding everything
-5. **Memory debugging**: Always use `--sanitizers` or `--thread-sanitizer`, not both
-6. **Check first**: Use `--info` to verify settings before long builds
-7. **Safe testing**: Use `--dry-run` to preview complex build commands
-8. **Full clean rarely needed**: Use `--full-clean` only when absolutely necessary (removes everything including dependencies)
+5. **Quick functional test**: Use `--quick-test` to build and run a short simulation
+6. **Memory debugging**: Always use `--sanitizers` or `--thread-sanitizer`, not both
+7. **Check first**: Use `--info` to verify settings before long builds
+8. **Safe testing**: Use `--dry-run` to preview complex build commands
+9. **Full clean rarely needed**: Use `--full-clean` only when absolutely necessary (removes everything including dependencies)
 
 ## 🚨 Common Issues
 

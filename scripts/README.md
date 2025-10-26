@@ -2,9 +2,21 @@
 
 This directory contains utility scripts for the biosim4 project.
 
+## UI Library 🎨
+
+All scripts now use a unified UI library (`lib/ui.sh`) for consistent, professional terminal output:
+
+- **Consistent colors** and formatting across all scripts
+- **Interactive prompts** with standardized yes/no questions
+- **Box drawing** for headers and footers
+- **Status indicators** (✓, ✗, bullets)
+- **Error handling** with helpful suggestions
+
+See [lib/README.md](lib/README.md) for complete documentation on using the UI library in your own scripts.
+
 ## Available Scripts
 
-### `build.sh` ⭐ NEW
+### `build.sh` ⭐
 
 Comprehensive build script with flexible options for different development workflows.
 
