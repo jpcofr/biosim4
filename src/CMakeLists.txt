@@ -1,14 +1,30 @@
 
-FILE(GLOB MyCppSources ./*.cpp)
-# Only include implementation-specific headers from src/
-# All other headers are now in ../include/
-FILE(GLOB MyCppheaders ./imageWriter.h ./videoVerifier.h)
+# Collect source files from new directory structure
+file(GLOB_RECURSE BIOSIM_SOURCES
+  types/*.cpp
+  utils/*.cpp
+  core/**/*.cpp
+  io/**/*.cpp
+)
 
-# Exclude old unit test files - now handled by tests/ directory
-list(REMOVE_ITEM MyCppSources
-  "${CMAKE_CURRENT_SOURCE_DIR}/unitTestBasicTypes.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/unitTestConnectNeuralNetWiringFromGenome.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/unitTestGridVisitNeighborhood.cpp"
+# Only include main.cpp from root directory (all other files have been refactored into subdirectories)
+set(ROOT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
+
+# Exclude test files from source list (they end with _test.cpp)
+file(GLOB_RECURSE TEST_SOURCES
+  types/*_test.cpp
+  utils/*_test.cpp
+  core/**/*_test.cpp
+  io/**/*_test.cpp
+)
+list(REMOVE_ITEM BIOSIM_SOURCES ${TEST_SOURCES})
+
+# Combine all non-test sources
+set(ALL_SOURCES ${ROOT_SOURCES} ${BIOSIM_SOURCES})
+
+# Implementation-specific headers from src/ subdirectories
+file(GLOB_RECURSE IMPL_HEADERS
+  io/video/*.h
 )
 
 SET(GCC_COVERAGE_COMPILE_FLAGS "-O3 -Wall -fexceptions -fopenmp")
@@ -18,12 +34,23 @@ SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
 set(CMAKE_VERBOSE_MAKEFILE on)
 
-add_executable(biosim4 ${MyCppSources} ${MyCppheaders})
+add_executable(biosim4 ${ALL_SOURCES} ${IMPL_HEADERS})
 
-# Project includes (non-SYSTEM)
+# Project includes (non-SYSTEM) - include both old and new paths during transition
 target_include_directories(biosim4 PRIVATE
-  ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/include          # Old headers (backward compatibility)
+  ${CMAKE_SOURCE_DIR}/src              # Old sources (backward compatibility)
+  ${CMAKE_SOURCE_DIR}/src/types        # New structure
+  ${CMAKE_SOURCE_DIR}/src/utils
+  ${CMAKE_SOURCE_DIR}/src/core
+  ${CMAKE_SOURCE_DIR}/src/core/world
+  ${CMAKE_SOURCE_DIR}/src/core/agents
+  ${CMAKE_SOURCE_DIR}/src/core/genetics
+  ${CMAKE_SOURCE_DIR}/src/core/simulation
+  ${CMAKE_SOURCE_DIR}/src/io
+  ${CMAKE_SOURCE_DIR}/src/io/config
+  ${CMAKE_SOURCE_DIR}/src/io/video
+  ${CMAKE_SOURCE_DIR}/src/io/render
 )
 
 # Third-party headers as SYSTEM to mute their warnings

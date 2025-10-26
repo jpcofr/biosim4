@@ -5,22 +5,38 @@ enable_testing()
 
 # Gather all source files from src/ that are needed for testing
 # Exclude main.cpp and the old unit test files
-file(GLOB BIOSIM_LIB_SOURCES
+file(GLOB_RECURSE BIOSIM_LIB_SOURCES
   ${CMAKE_SOURCE_DIR}/src/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/types/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/utils/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/core/**/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/io/**/*.cpp
 )
 
-# Remove main.cpp and old unit test files from library sources
+# Remove main.cpp, old unit test files, and new *_test.cpp files from library sources
 list(FILTER BIOSIM_LIB_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 list(FILTER BIOSIM_LIB_SOURCES EXCLUDE REGEX ".*unitTest.*\\.cpp$")
+list(FILTER BIOSIM_LIB_SOURCES EXCLUDE REGEX ".*_test\\.cpp$")
 
 # Create a library from biosim4 sources (excluding main)
 # This allows tests to link against the core functionality
 add_library(biosim4_lib STATIC ${BIOSIM_LIB_SOURCES})
 
-# Include directories for the library
+# Include directories for the library - support both old and new structure
 target_include_directories(biosim4_lib PUBLIC
-  ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/include          # Old headers (backward compatibility)
+  ${CMAKE_SOURCE_DIR}/src              # Old sources (backward compatibility)
+  ${CMAKE_SOURCE_DIR}/src/types        # New structure
+  ${CMAKE_SOURCE_DIR}/src/utils
+  ${CMAKE_SOURCE_DIR}/src/core
+  ${CMAKE_SOURCE_DIR}/src/core/world
+  ${CMAKE_SOURCE_DIR}/src/core/agents
+  ${CMAKE_SOURCE_DIR}/src/core/genetics
+  ${CMAKE_SOURCE_DIR}/src/core/simulation
+  ${CMAKE_SOURCE_DIR}/src/io
+  ${CMAKE_SOURCE_DIR}/src/io/config
+  ${CMAKE_SOURCE_DIR}/src/io/video
+  ${CMAKE_SOURCE_DIR}/src/io/render
   ${cli11_SOURCE_DIR}/include
 )
 
@@ -59,8 +75,19 @@ function(add_biosim_test TEST_NAME TEST_SOURCE)
   )
 
   target_include_directories(${TEST_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/include          # Old headers (backward compatibility)
+    ${CMAKE_SOURCE_DIR}/src              # Old sources (backward compatibility)
+    ${CMAKE_SOURCE_DIR}/src/types        # New structure
+    ${CMAKE_SOURCE_DIR}/src/utils
+    ${CMAKE_SOURCE_DIR}/src/core
+    ${CMAKE_SOURCE_DIR}/src/core/world
+    ${CMAKE_SOURCE_DIR}/src/core/agents
+    ${CMAKE_SOURCE_DIR}/src/core/genetics
+    ${CMAKE_SOURCE_DIR}/src/core/simulation
+    ${CMAKE_SOURCE_DIR}/src/io
+    ${CMAKE_SOURCE_DIR}/src/io/config
+    ${CMAKE_SOURCE_DIR}/src/io/video
+    ${CMAKE_SOURCE_DIR}/src/io/render
   )
 
   # Add test to CTest (even though we're using gtest, this allows "ctest" to work)
@@ -73,21 +100,37 @@ function(add_biosim_test TEST_NAME TEST_SOURCE)
   )
 endfunction()
 
-# Add unit tests
-add_biosim_test(test_basic_types unit/test_basic_types.cpp)
-add_biosim_test(test_neural_net_wiring unit/test_neural_net_wiring.cpp)
-add_biosim_test(test_grid_visit_neighborhood unit/test_grid_visit_neighborhood.cpp)
-add_biosim_test(test_render_backend unit/test_render_backend.cpp)
+# Legacy unit tests removed - all tests are now co-located with source code
+
+# Auto-discover and add co-located tests from src/ subdirectories
+file(GLOB_RECURSE COLOCATED_TEST_SOURCES
+  ${CMAKE_SOURCE_DIR}/src/types/*_test.cpp
+  ${CMAKE_SOURCE_DIR}/src/utils/*_test.cpp
+  ${CMAKE_SOURCE_DIR}/src/core/**/*_test.cpp
+  ${CMAKE_SOURCE_DIR}/src/io/**/*_test.cpp
+)
+
+foreach(TEST_SOURCE ${COLOCATED_TEST_SOURCES})
+  get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+  add_biosim_test(${TEST_NAME} ${TEST_SOURCE})
+endforeach()
+
+# Collect all test targets for the run_tests target
+set(ALL_TEST_TARGETS)
+foreach(TEST_SOURCE ${COLOCATED_TEST_SOURCES})
+  get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+  list(APPEND ALL_TEST_TARGETS ${TEST_NAME})
+endforeach()
 
 # Optional: Add a target to run all tests
 add_custom_target(run_tests
   COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --verbose
-  DEPENDS test_basic_types test_neural_net_wiring test_grid_visit_neighborhood test_render_backend
+  DEPENDS ${ALL_TEST_TARGETS}
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   COMMENT "Running all tests..."
 )
 
 message(STATUS "Tests configured with Google Test")
-message(STATUS "  - Unit tests: test_basic_types, test_neural_net_wiring, test_grid_visit_neighborhood, test_render_backend")
+message(STATUS "  - Co-located tests: ${COLOCATED_TEST_SOURCES}")
 message(STATUS "  - Run tests with: make test or ninja test")
 message(STATUS "  - Or run individual tests from: ${CMAKE_BINARY_DIR}/bin/")

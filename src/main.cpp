@@ -21,8 +21,14 @@
 #include <string>
 
 namespace BioSim {
-void simulator(const Params& params);
+inline namespace v1 {
+namespace Core {
+namespace Simulation {
+void simulator(const Types::Params& params);
 }
+}  // namespace Core
+}  // namespace v1
+}  // namespace BioSim
 
 /**
  * @brief Display available configuration presets
@@ -161,7 +167,7 @@ int main(int argc, char** argv) {
 
   // Run simulation
   try {
-    BioSim::simulator(config.getParams());
+    BioSim::Core::Simulation::simulator(config.getParams());
   } catch (const std::exception& e) {
     BioSim::Logger::error("\nSimulation failed: {}", e.what());
     BioSim::Logger::log_error("Simulation failed with exception: {}", e.what());
